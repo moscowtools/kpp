@@ -352,7 +352,7 @@
 // ===== FIREBASE =====
 var firebaseConfig={apiKey:"AIzaSyCYPR7TtADR6gRgzs_eSZlAc6tCXHQjx4Y",authDomain:"enter-7ad5a.firebaseapp.com",databaseURL:"https://enter-7ad5a-default-rtdb.firebaseio.com",projectId:"enter-7ad5a",storageBucket:"enter-7ad5a.firebasestorage.app",messagingSenderId:"115636827493",appId:"1:115636827493:web:ac5e3b816c8001ac4d1d8c"};
 
-var db=null,syncOnline=false,syncTimer=null;
+var db=null,syncOnline=false,syncTimers={};
 var records=[],exitTargetId=null,deleteTargetId=null,highlightId=null;
 var users=[],logs=[],pendingUsers=[];
 var currentUser=null,currentFilter='all';
@@ -388,7 +388,7 @@ document.getElementById('loginForm').addEventListener('submit',function(e){
     }
 
     // User check from Firebase
-    if(!db){err.textContent='База данных недоступна';err.classList.add('show');return;}
+    if(!db){if(!initFirebase()){err.textContent='База данных недоступна';err.classList.add('show');return}}
     db.ref('kpp_users/'+u).once('value',function(snap){
         var user=snap.val();
         if(!user){err.textContent='Пользователь не найден';err.classList.add('show');return;}
@@ -416,7 +416,7 @@ document.getElementById('registerForm').addEventListener('submit',function(e){
 
     if(!login||!pass||!name){err.textContent='Заполните обязательные поля';err.classList.add('show');suc.classList.remove('show');return;}
 
-    if(!db){err.textContent='База данных недоступна';err.classList.add('show');return;}
+    if(!db){if(!initFirebase()){err.textContent='База данных недоступна';err.classList.add('show');return}}
 
     db.ref('kpp_users/'+login).once('value',function(snap){
         if(snap.val()){err.textContent='Этот логин уже занят';err.classList.add('show');suc.classList.remove('show');return;}
@@ -456,7 +456,7 @@ function setSyncSyncing(){var b=document.getElementById('syncBadge');if(b){b.cla
 
 // ===== FIREBASE CRUD =====
 function loadFB(path,cb){if(!db){cb(null);return}db.ref(path).once('value').then(function(s){cb(s.val())}).catch(function(){cb(null)})}
-function saveFB(path,data){if(!db)return;setSyncSyncing();if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(function(){db.ref(path).set(data).then(function(){setSyncBadge(true);syncOnline=true}).catch(function(){setSyncBadge(false);syncOnline=false})},300)}
+function saveFB(path,data){if(!db)return;setSyncSyncing();if(syncTimers[path])clearTimeout(syncTimers[path]);syncTimers[path]=setTimeout(function(){db.ref(path).set(data).then(function(){setSyncBadge(true);syncOnline=true}).catch(function(){setSyncBadge(false);syncOnline=false})},300)}
 function listenFB(path,cb){if(!db)return;db.ref(path).on('value',function(s){cb(s.val())},function(){setSyncBadge(false);syncOnline=false})}
 
 function saveLocal(){localStorage.setItem('kpp_records',JSON.stringify(records))}

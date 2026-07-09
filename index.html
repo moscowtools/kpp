@@ -8,1032 +8,759 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --bg: #0b0e14;
-            --bg-card: #141821;
-            --bg-card-hover: #181d28;
-            --bg-input: #0f1219;
-            --border: rgba(255,255,255,0.06);
-            --border-hover: rgba(255,255,255,0.1);
-            --green: #34d399;
-            --green-dim: rgba(52,211,153,0.1);
-            --green-glow: rgba(52,211,153,0.15);
-            --blue: #60a5fa;
-            --yellow: #fbbf24;
-            --red: #f87171;
-            --text: #e2e8f0;
-            --text-dim: #94a3b8;
-            --text-muted: #475569;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 500px;
-            background: radial-gradient(ellipse 800px 500px at 50% -100px, rgba(52,211,153,0.06), transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ===== LOGIN ===== */
-        .login-screen {
-            position: fixed; inset: 0;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 500;
-            background: var(--bg);
-        }
-
-        .login-screen.hidden { display: none; }
-
-        .login-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 2.5rem 2rem 2rem;
-            width: 100%; max-width: 380px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
-        }
-
-        .login-logo { text-align: center; margin-bottom: 2rem; }
-
-        .login-logo .icon {
-            width: 56px; height: 56px;
-            background: linear-gradient(135deg, var(--green), #059669);
-            border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 1rem;
-            box-shadow: 0 8px 24px rgba(52,211,153,0.2);
-        }
-
-        .login-logo h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
-        .login-logo p { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
-
-        .login-error {
-            background: rgba(248,113,113,0.08);
-            border: 1px solid rgba(248,113,113,0.2);
-            border-radius: 10px;
-            padding: 10px 14px; font-size: 13px;
-            color: var(--red); font-weight: 600;
-            margin-bottom: 1rem; display: none;
-        }
-        .login-error.show { display: block; }
-
-        .login-field { margin-bottom: 1rem; }
-
-        .login-field label {
-            display: block; font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.8px;
-            color: var(--text-dim); margin-bottom: 6px;
-        }
-
-        .login-field input {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 13px 16px; color: #fff;
-            font-family: inherit; font-size: 15px; font-weight: 500;
-            outline: none; transition: border-color 0.2s;
-        }
-
-        .login-field input:focus {
-            border-color: rgba(52,211,153,0.4);
-            box-shadow: 0 0 0 3px rgba(52,211,153,0.08);
-        }
-
-        .login-field input::placeholder { color: var(--text-muted); }
-
-        .login-btn {
-            width: 100%; padding: 14px;
-            background: linear-gradient(135deg, var(--green), #059669);
-            border: none; border-radius: 12px;
-            color: #000; font-family: inherit;
-            font-size: 13px; font-weight: 800;
-            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-            text-transform: uppercase; letter-spacing: 1px;
-            margin-top: 0.5rem;
-        }
-        .login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(52,211,153,0.25); }
-        .login-btn:active { transform: translateY(0); }
-
-        .login-footer { text-align: center; margin-top: 1.25rem; font-size: 11px; color: var(--text-muted); }
-
-        /* ===== APP ===== */
-        .app { display: none; position: relative; z-index: 1; }
-        .app.active { display: block; }
-
-        /* Header */
-        .header {
-            background: rgba(11,14,20,0.8);
-            border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
-            position: sticky; top: 0; z-index: 100;
-            backdrop-filter: blur(16px);
-        }
-
-        .header-inner {
-            max-width: 1400px; margin: 0 auto;
-            display: flex; align-items: center; justify-content: space-between;
-            height: 64px;
-        }
-
-        .logo { display: flex; align-items: center; gap: 12px; }
-
-        .logo-icon {
-            width: 38px; height: 38px;
-            background: linear-gradient(135deg, var(--green), #059669);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; flex-shrink: 0;
-        }
-
-        .logo-text h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
-        .logo-text span { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-
-        .header-right { display: flex; align-items: center; gap: 12px; }
-
-        .sync-badge {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; font-weight: 600;
-            padding: 5px 12px; border-radius: 100px;
-        }
-
-        .sync-badge.online { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
-        .sync-badge.offline { background: rgba(248,113,113,0.08); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
-        .sync-badge.syncing { background: rgba(251,191,36,0.08); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
-
-        .live-badge {
-            display: flex; align-items: center; gap: 6px;
-            background: var(--green-dim);
-            border: 1px solid rgba(52,211,153,0.15);
-            padding: 5px 12px; border-radius: 100px;
-            font-size: 11px; font-weight: 600; color: var(--green);
-        }
-
-        .live-dot {
-            width: 5px; height: 5px;
-            background: var(--green); border-radius: 50%;
-            animation: livePulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .clock {
-            font-size: 13px; font-weight: 700;
-            color: var(--text-dim); font-variant-numeric: tabular-nums;
-        }
-
-        .logout-btn {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            padding: 6px 12px; border-radius: 8px;
-            font-family: inherit; font-size: 11px; font-weight: 700;
-            cursor: pointer; transition: all 0.15s;
-            text-transform: uppercase; letter-spacing: 0.3px;
-        }
-        .logout-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-
-        /* Main */
-        .main {
-            max-width: 1400px; margin: 0 auto;
-            padding: 1.25rem 2rem 2rem;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 1.25rem;
-        }
-
-        /* Stats */
-        .stats-bar {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.75rem;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.125rem 1.25rem;
-            transition: border-color 0.2s;
-        }
-
-        .stat-card:hover { border-color: var(--border-hover); }
-
-        .stat-label {
-            font-size: 10px; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 1px;
-            font-weight: 700; margin-bottom: 8px;
-        }
-
-        .stat-row { display: flex; align-items: baseline; gap: 8px; }
-
-        .stat-value {
-            font-size: 30px; font-weight: 900;
-            letter-spacing: -1.5px; line-height: 1;
-        }
-
-        .stat-value.green { color: var(--green); }
-        .stat-value.blue { color: var(--blue); }
-        .stat-value.yellow { color: var(--yellow); }
-        .stat-value.red { color: var(--red); }
-
-        .stat-sub { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-
-        .stat-note { font-size: 10px; font-weight: 600; margin-top: 6px; color: var(--text-muted); }
-
-        /* Panel */
-        .panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            height: fit-content;
-            position: sticky; top: 82px;
-        }
-
-        .panel-header {
-            display: flex; align-items: center; gap: 10px;
-            margin-bottom: 1.25rem;
-        }
-
-        .panel-icon {
-            width: 32px; height: 32px;
-            background: var(--green-dim);
-            border: 1px solid rgba(52,211,153,0.15);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0;
-        }
-
-        .panel-header h2 { font-size: 14px; font-weight: 700; }
-
-        .form-divider {
-            height: 1px;
-            background: var(--border);
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group { margin-bottom: 0.875rem; }
-
-        .form-label {
-            display: block; font-size: 10px; font-weight: 700;
-            color: var(--text-muted); margin-bottom: 5px;
-            text-transform: uppercase; letter-spacing: 0.7px;
-        }
-
-        .form-input, .form-select {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 11px 13px;
-            color: var(--text);
-            font-family: inherit; font-size: 13px; font-weight: 500;
-            outline: none; transition: border-color 0.2s;
-        }
-
-        .form-input:hover, .form-select:hover { border-color: var(--border-hover); }
-
-        .form-input:focus, .form-select:focus {
-            border-color: rgba(52,211,153,0.35);
-            box-shadow: 0 0 0 3px rgba(52,211,153,0.06);
-        }
-
-        .form-input::placeholder { color: var(--text-muted); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-
-        .form-select {
-            appearance: none; cursor: pointer;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L3 7h10l-5 5z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 36px; color-scheme: dark;
-        }
-
-        .form-select option { background: #1a1a1a; color: #f5f5f5; padding: 8px; }
-
-        .btn-register {
-            width: 100%; padding: 13px;
-            background: linear-gradient(135deg, var(--green), #059669);
-            border: none; border-radius: 12px;
-            color: #000; font-family: inherit;
-            font-size: 12px; font-weight: 800;
-            cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
-            text-transform: uppercase; letter-spacing: 1px;
-            margin-top: 0.5rem;
-        }
-        .btn-register:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(52,211,153,0.2); }
-        .btn-register:active { transform: translateY(0); }
-
-        /* Table panel */
-        .table-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            display: flex; flex-direction: column;
-            min-height: 0;
-        }
-
-        .table-header {
-            display: flex; align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem; gap: 1rem;
-        }
-
-        .table-title {
-            display: flex; align-items: center; gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .table-icon {
-            width: 32px; height: 32px;
-            background: rgba(96,165,250,0.1);
-            border: 1px solid rgba(96,165,250,0.15);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0;
-        }
-
-        .table-title h2 { font-size: 14px; font-weight: 700; }
-
-        .search-box {
-            position: relative; flex: 1; max-width: 260px;
-        }
-
-        .search-box input {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 9px 13px 9px 36px;
-            color: var(--text);
-            font-family: inherit; font-size: 12px;
-            outline: none; transition: border-color 0.2s;
-        }
-
-        .search-box input:focus {
-            border-color: rgba(52,211,153,0.35);
-            box-shadow: 0 0 0 3px rgba(52,211,153,0.06);
-        }
-
-        .search-box input::placeholder { color: var(--text-muted); }
-
-        .search-icon {
-            position: absolute; left: 12px; top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted); font-size: 13px;
-            pointer-events: none;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: rgba(0,0,0,0.15);
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-        thead { background: rgba(255,255,255,0.015); }
-
-        th {
-            padding: 12px 14px; text-align: left;
-            font-size: 9px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 1px;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap; user-select: none;
-        }
-
-        td {
-            padding: 13px 14px; font-size: 12px; font-weight: 500;
-            border-bottom: 1px solid rgba(255,255,255,0.02);
-            white-space: nowrap;
-        }
-
-        tbody tr { transition: background 0.12s; }
-        tbody tr:hover td { background: rgba(52,211,153,0.02); }
-        tbody tr:last-child td { border-bottom: none; }
-
-        /* Badges */
-        .badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 9px; border-radius: 6px;
-            font-size: 10px; font-weight: 700;
-        }
-
-        .badge-active { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
-        .badge-expired { background: rgba(248,113,113,0.08); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
-        .badge-warning { background: rgba(251,191,36,0.08); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
-        .badge-inside { background: rgba(96,165,250,0.08); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
-        .badge-outside { background: rgba(100,116,139,0.08); color: var(--text-muted); border: 1px solid rgba(100,116,139,0.15); }
-
-        .plate {
-            display: inline-block;
-            background: rgba(255,255,255,0.04);
-            padding: 3px 8px; border-radius: 5px;
-            font-weight: 800; font-size: 11px; letter-spacing: 1px;
-            border: 1px solid var(--border);
-            font-family: 'Courier New', monospace;
-        }
-
-        .nickname-cell { display: flex; flex-direction: column; gap: 1px; }
-        .nickname { font-weight: 700; color: var(--text); font-size: 13px; }
-        .nickname-fullname { font-size: 10px; color: var(--text-muted); font-weight: 500; }
-        .time-cell { font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: 11px; }
-        .pass-type-tag { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
-
-        .btn-action {
-            padding: 5px 11px; border-radius: 6px;
-            font-family: inherit; font-size: 10px; font-weight: 700;
-            cursor: pointer; transition: all 0.12s;
-            text-transform: uppercase; letter-spacing: 0.3px; border: none;
-        }
-
-        .btn-exit { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.15); color: var(--red); }
-        .btn-exit:hover { background: var(--red); color: #000; border-color: var(--red); }
-        .btn-reenter { background: var(--green-dim); border: 1px solid rgba(52,211,153,0.15); color: var(--green); }
-        .btn-reenter:hover { background: var(--green); color: #000; border-color: var(--green); }
-
-        .empty-state { text-align: center; padding: 4rem 2rem; }
-        .empty-state .icon { font-size: 40px; margin-bottom: 0.75rem; opacity: 0.4; display: block; }
-        .empty-state h3 { font-size: 14px; font-weight: 700; color: var(--text-dim); margin-bottom: 3px; }
-        .empty-state p { font-size: 12px; color: var(--text-muted); }
-
-        /* Toast */
-        .toast-container {
-            position: fixed; top: 76px; right: 1.5rem;
-            z-index: 200; display: flex; flex-direction: column; gap: 8px;
-            pointer-events: none;
-        }
-
-        .toast {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px; padding: 12px 18px;
-            font-size: 12px; font-weight: 600;
-            animation: toastIn 0.25s ease, toastOut 0.25s ease 3s forwards;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            pointer-events: auto;
-        }
-
-        .toast.success { border-left: 3px solid var(--green); }
-        .toast.error { border-left: 3px solid var(--red); }
-        .toast.info { border-left: 3px solid var(--blue); }
-
-        @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } }
-        @keyframes toastOut { to { opacity: 0; transform: translateX(20px); } }
-
-        /* Modal */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.6); z-index: 300;
-            align-items: center; justify-content: center; padding: 1rem;
-            backdrop-filter: blur(6px);
-        }
-        .modal-overlay.active { display: flex; }
-
-        .modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px; padding: 1.75rem;
-            max-width: 400px; width: 100%;
-            animation: modalIn 0.2s ease;
-        }
-
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.96); } }
-
-        .modal-icon {
-            width: 44px; height: 44px;
-            background: rgba(248,113,113,0.08);
-            border: 1px solid rgba(248,113,113,0.15);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; margin-bottom: 1rem;
-        }
-
-        .modal h3 { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
-        .modal p { color: var(--text-dim); font-size: 13px; margin-bottom: 1.5rem; line-height: 1.5; }
-        .modal-actions { display: flex; gap: 8px; }
-
-        .modal-actions button {
-            flex: 1; padding: 11px; border-radius: 10px;
-            font-family: inherit; font-size: 12px; font-weight: 700;
-            cursor: pointer; border: none; transition: all 0.12s;
-        }
-
-        .btn-cancel { background: rgba(255,255,255,0.04); color: var(--text-dim); border: 1px solid var(--border) !important; }
-        .btn-cancel:hover { background: rgba(255,255,255,0.08); }
-        .btn-confirm { background: var(--red); color: #fff; }
-        .btn-confirm:hover { background: #ef4444; }
-
-        @keyframes rowHL { from { background: rgba(52,211,153,0.06); } to { background: transparent; } }
-        tr.highlight td { animation: rowHL 2s ease forwards; }
-
-        @media (max-width: 1100px) { .main { grid-template-columns: 1fr; } .panel { position: static; } }
-        @media (max-width: 800px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } .main { padding: 1rem; } }
-        @media (max-width: 500px) {
-            .stats-bar { grid-template-columns: 1fr; }
-            .form-row { grid-template-columns: 1fr; }
-            .header { padding: 0 1rem; }
-            .main { padding: 0.75rem; gap: 0.75rem; }
-            .table-header { flex-direction: column; align-items: stretch; }
-            .search-box { max-width: 100%; }
-            .header-right .live-badge { display: none; }
-        }
-
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg:#0b0e14;--card:#141821;--input:#0f1219;--border:rgba(255,255,255,0.06);--bh:rgba(255,255,255,0.1);--green:#34d399;--gd:rgba(52,211,153,0.1);--blue:#60a5fa;--yellow:#fbbf24;--red:#f87171;--text:#e2e8f0;--dim:#94a3b8;--muted:#475569}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+        body::before{content:'';position:fixed;top:0;left:0;right:0;height:500px;background:radial-gradient(ellipse 800px 500px at 50% -100px,rgba(52,211,153,0.05),transparent 70%);pointer-events:none;z-index:0}
+
+        /* AUTH SCREENS */
+        .auth{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:500;background:var(--bg);padding:1rem}
+        .auth.hidden{display:none}
+        .auth-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:2.5rem 2rem 2rem;width:100%;max-width:400px}
+        .auth-logo{text-align:center;margin-bottom:2rem}
+        .auth-logo .ic{width:56px;height:56px;background:linear-gradient(135deg,var(--green),#059669);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 1rem;box-shadow:0 8px 24px rgba(52,211,153,0.2)}
+        .auth-logo h1{font-size:20px;font-weight:800}
+        .auth-logo p{font-size:13px;color:var(--dim);margin-top:4px}
+        .auth-error{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);font-weight:600;margin-bottom:1rem;display:none}
+        .auth-error.show{display:block}
+        .auth-success{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:1rem;display:none}
+        .auth-success.show{display:block}
+        .field{margin-bottom:1rem}
+        .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);margin-bottom:6px}
+        .field input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:#fff;font-family:inherit;font-size:15px;font-weight:500;outline:none;transition:border-color .2s}
+        .field input:focus{border-color:rgba(52,211,153,0.4);box-shadow:0 0 0 3px rgba(52,211,153,0.08)}
+        .field input::placeholder{color:var(--muted)}
+        .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--green),#059669);border:none;border-radius:12px;color:#000;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px;margin-top:0.5rem;transition:box-shadow .15s}
+        .auth-btn:hover{box-shadow:0 8px 24px rgba(52,211,153,0.25)}
+        .auth-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .auth-footer{text-align:center;margin-top:1.25rem;font-size:12px;color:var(--muted)}
+        .auth-footer a{color:var(--green);cursor:pointer;font-weight:600;text-decoration:none}
+        .auth-footer a:hover{text-decoration:underline}
+
+        /* HEADER */
+        .header{background:rgba(11,14,20,0.85);border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(16px)}
+        .header-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
+        .logo{display:flex;align-items:center;gap:12px}
+        .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),#059669);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+        .logo-text h1{font-size:15px;font-weight:800}
+        .logo-text span{font-size:10px;color:var(--muted)}
+        .header-right{display:flex;align-items:center;gap:10px}
+        .sync-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:4px 10px;border-radius:100px}
+        .sync-badge.online{background:var(--gd);color:var(--green);border:1px solid rgba(52,211,153,0.2)}
+        .sync-badge.offline{background:rgba(248,113,113,0.08);color:var(--red);border:1px solid rgba(248,113,113,0.2)}
+        .clock{font-size:13px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+        .user-badge{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--dim);background:rgba(255,255,255,0.04);border:1px solid var(--border);padding:5px 10px;border-radius:8px}
+        .user-badge .dot{width:7px;height:7px;border-radius:50%}
+        .user-badge .dot.admin{background:var(--yellow)}
+        .user-badge .dot.user{background:var(--green)}
+        .logout-btn{background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--dim);padding:5px 10px;border-radius:7px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase}
+        .logout-btn:hover{background:rgba(255,255,255,0.08);color:#fff}
+
+        /* APP */
+        .app{display:none;position:relative;z-index:1}
+        .app.active{display:block}
+        .main{max-width:1440px;margin:0 auto;padding:1.25rem 2rem 2rem;display:grid;grid-template-columns:380px 1fr;gap:1.25rem;height:calc(100vh - 60px)}
+        .stats-bar{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem}
+        .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.125rem}
+        .stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px}
+        .stat-row{display:flex;align-items:baseline;gap:8px}
+        .stat-value{font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1}
+        .stat-value.green{color:var(--green)}.stat-value.blue{color:var(--blue)}.stat-value.yellow{color:var(--yellow)}.stat-value.red{color:var(--red)}
+        .stat-sub{font-size:11px;color:var(--muted)}
+        .stat-note{font-size:10px;font-weight:600;margin-top:5px;color:var(--muted)}
+
+        .panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.25rem 1.5rem;height:fit-content;overflow-y:auto;max-height:calc(100vh - 180px)}
+        .panel-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+        .panel-icon{width:30px;height:30px;background:var(--gd);border:1px solid rgba(52,211,153,0.12);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px}
+        .panel-header h2{font-size:13px;font-weight:700}
+        .form-divider{height:1px;background:var(--border);margin-bottom:1rem}
+        .form-group{margin-bottom:0.75rem}
+        .form-label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.7px}
+        .form-input,.form-select{width:100%;background:var(--input);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;font-weight:500;outline:none;transition:border-color .15s}
+        .form-input:hover,.form-select:hover{border-color:var(--bh)}
+        .form-input:focus,.form-select:focus{border-color:rgba(52,211,153,0.35);box-shadow:0 0 0 3px rgba(52,211,153,0.05)}
+        .form-input::placeholder{color:var(--muted)}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.625rem}
+        .form-select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L3 7h10l-5 5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;color-scheme:dark}
+        .form-select option{background:#1a1a1a;color:#f5f5f5}
+        .btn-register{width:100%;padding:12px;background:linear-gradient(135deg,var(--green),#059669);border:none;border-radius:11px;color:#000;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:0.8px;margin-top:0.25rem}
+        .btn-register:hover{box-shadow:0 6px 20px rgba(52,211,153,0.2)}
+
+        .table-panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+        .table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap}
+        .table-title{display:flex;align-items:center;gap:10px}
+        .table-icon{width:30px;height:30px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.12);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px}
+        .table-title h2{font-size:13px;font-weight:700}
+        .table-actions{display:flex;gap:6px;align-items:center}
+        .search-box{position:relative}
+        .search-box input{width:220px;background:var(--input);border:1px solid var(--border);border-radius:9px;padding:8px 12px 8px 32px;color:var(--text);font-family:inherit;font-size:12px;outline:none;transition:all .15s}
+        .search-box input:focus{border-color:rgba(52,211,153,0.35);width:260px}
+        .search-box input::placeholder{color:var(--muted)}
+        .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+        .btn-sm{padding:7px 12px;border-radius:8px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--dim);transition:all .12s;text-transform:uppercase;letter-spacing:0.3px}
+        .btn-sm:hover{background:rgba(255,255,255,0.06);color:var(--text)}
+        .btn-sm.export{border-color:rgba(96,165,250,0.2);color:var(--blue)}
+        .btn-sm.export:hover{background:rgba(96,165,250,0.08)}
+        .btn-sm.import{border-color:rgba(52,211,153,0.2);color:var(--green)}
+        .btn-sm.import:hover{background:var(--gd)}
+
+        .table-wrapper{overflow-x:auto;border-radius:11px;border:1px solid var(--border);background:rgba(0,0,0,0.12)}
+        table{width:100%;border-collapse:collapse}
+        thead{background:rgba(255,255,255,0.015)}
+        th{padding:11px 13px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+        td{padding:12px 13px;font-size:12px;font-weight:500;border-bottom:1px solid rgba(255,255,255,0.02);white-space:nowrap}
+        tbody tr{transition:background .1s}
+        tbody tr:hover td{background:rgba(52,211,153,0.02)}
+        tbody tr:last-child td{border-bottom:none}
+
+        .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700}
+        .badge-active{background:var(--gd);color:var(--green);border:1px solid rgba(52,211,153,0.18)}
+        .badge-expired{background:rgba(248,113,113,0.08);color:var(--red);border:1px solid rgba(248,113,113,0.18)}
+        .badge-warning{background:rgba(251,191,36,0.08);color:var(--yellow);border:1px solid rgba(251,191,36,0.18)}
+        .badge-inside{background:rgba(96,165,250,0.08);color:var(--blue);border:1px solid rgba(96,165,250,0.18)}
+        .badge-outside{background:rgba(100,116,139,0.06);color:var(--muted);border:1px solid rgba(100,116,139,0.1)}
+        .badge-pending{background:rgba(251,191,36,0.08);color:var(--yellow);border:1px solid rgba(251,191,36,0.18)}
+        .badge-approved{background:var(--gd);color:var(--green);border:1px solid rgba(52,211,153,0.18)}
+        .badge-rejected{background:rgba(248,113,113,0.08);color:var(--red);border:1px solid rgba(248,113,113,0.18)}
+        .plate{display:inline-block;background:rgba(255,255,255,0.04);padding:3px 7px;border-radius:4px;font-weight:800;font-size:11px;letter-spacing:0.8px;border:1px solid var(--border);font-family:'Courier New',monospace}
+        .nickname-cell{display:flex;flex-direction:column;gap:1px}
+        .nickname{font-weight:700;font-size:12px}
+        .nickname-fullname{font-size:10px;color:var(--muted)}
+        .time-cell{font-variant-numeric:tabular-nums;color:var(--dim);font-size:11px}
+        .pass-type-tag{font-size:9px;font-weight:600;color:var(--muted);margin-top:2px}
+
+        .btn-action{padding:4px 9px;border-radius:5px;font-family:inherit;font-size:9px;font-weight:700;cursor:pointer;transition:all .1s;text-transform:uppercase;letter-spacing:0.3px;border:none}
+        .btn-exit{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.12);color:var(--red)}
+        .btn-exit:hover{background:var(--red);color:#000}
+        .btn-reenter{background:var(--gd);border:1px solid rgba(52,211,153,0.12);color:var(--green)}
+        .btn-reenter:hover{background:var(--green);color:#000}
+        .btn-edit{background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.12);color:var(--blue)}
+        .btn-edit:hover{background:var(--blue);color:#000}
+        .btn-delete{background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.08);color:var(--muted)}
+        .btn-delete:hover{background:var(--red);color:#000;border-color:var(--red)}
+        .btn-approve{background:var(--gd);border:1px solid rgba(52,211,153,0.15);color:var(--green)}
+        .btn-approve:hover{background:var(--green);color:#000}
+        .btn-reject{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.12);color:var(--red)}
+        .btn-reject:hover{background:var(--red);color:#000}
+        .actions-cell{display:flex;gap:4px}
+
+        .tabs{grid-column:1/-1;display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:4px}
+        .tab{padding:9px 18px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:600;color:var(--dim);background:transparent;border:none;cursor:pointer;transition:all .15s;white-space:nowrap}
+        .tab:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+        .tab.active{color:#000;background:var(--green);font-weight:700}
+        .tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;font-size:10px;font-weight:700;margin-left:5px;padding:0 5px}
+        .tab.active .tab-count{background:rgba(0,0,0,0.15);color:#000}
+        .tab:not(.active) .tab-count{background:rgba(255,255,255,0.06);color:var(--muted)}
+
+        .empty-state{text-align:center;padding:3rem 2rem}
+        .empty-state .icon{font-size:36px;margin-bottom:0.5rem;opacity:0.3;display:block}
+        .empty-state h3{font-size:13px;font-weight:700;color:var(--dim)}
+        .empty-state p{font-size:11px;color:var(--muted);margin-top:2px}
+
+        /* MAP */
+        .map-panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.25rem 1.5rem;display:none;grid-column:1/-1;overflow-y:auto;max-height:calc(100vh - 180px)}
+        .map-panel.active{display:block;grid-column:1/-1}
+        .map-container{border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#0a0f06}
+
+        /* ADMIN PANEL */
+        .admin-panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.25rem 1.5rem;overflow-y:auto;max-height:calc(100vh - 180px)}
+        .admin-section{margin-bottom:1.5rem}
+        .admin-section h3{font-size:13px;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px}
+        .admin-section h3 .cnt{background:rgba(251,191,36,0.1);color:var(--yellow);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+        .log-item{padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.15);border:1px solid var(--border);margin-bottom:6px;font-size:11px;display:flex;align-items:center;gap:8px}
+        .log-item .log-time{color:var(--muted);font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .log-item .log-user{color:var(--blue);font-weight:700;white-space:nowrap}
+        .log-item .log-action{color:var(--dim);flex:1}
+
+        /* MODALS */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px)}
+        .modal-overlay.active{display:flex}
+        .modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;max-width:400px;width:100%;animation:modalIn .2s ease}
+        @keyframes modalIn{from{opacity:0;transform:scale(0.96)}}
+        .modal-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:0.75rem}
+        .modal-icon.danger{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.12)}
+        .modal h3{font-size:16px;font-weight:800;margin-bottom:4px}
+        .modal p{color:var(--dim);font-size:12px;margin-bottom:1.25rem;line-height:1.5}
+        .modal-actions{display:flex;gap:8px}
+        .modal-actions button{flex:1;padding:10px;border-radius:9px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .12s}
+        .btn-cancel{background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border) !important}
+        .btn-cancel:hover{background:rgba(255,255,255,0.08)}
+        .btn-confirm{background:var(--red);color:#fff}
+        .btn-confirm:hover{background:#ef4444}
+        .btn-confirm.green{background:var(--green);color:#000}
+
+        /* TOAST */
+        .toast-container{position:fixed;top:72px;right:1.5rem;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+        .toast{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 16px;font-size:12px;font-weight:600;animation:toastIn .25s ease,toastOut .25s ease 3s forwards;box-shadow:0 8px 24px rgba(0,0,0,0.3);pointer-events:auto}
+        .toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--blue)}
+        @keyframes toastIn{from{opacity:0;transform:translateX(20px)}}
+        @keyframes toastOut{to{opacity:0;transform:translateX(20px)}}
+        @keyframes rowHL{from{background:rgba(52,211,153,0.06)}to{background:transparent}}
+        tr.highlight td{animation:rowHL 2s ease forwards}
+
+        @media(max-width:1100px){.main{grid-template-columns:1fr}.panel{position:static}}
+        @media(max-width:800px){.stats-bar{grid-template-columns:repeat(2,1fr)}.main{padding:1rem}}
+        @media(max-width:500px){.stats-bar{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.header{padding:0 1rem}.main{padding:0.75rem;gap:0.75rem}.tabs{overflow-x:auto}}
+        ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.05);border-radius:2px}
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <div class="login-screen" id="loginScreen">
-        <div class="login-card">
-            <div class="login-logo">
-                <div class="icon">🛡</div>
-                <h1>КПП Хайрок</h1>
-                <p>Национальный парк · Система контроля</p>
+<!-- ===== LOGIN ===== -->
+<div class="auth" id="loginScreen">
+    <div class="auth-card">
+        <div class="auth-logo"><div class="ic">🛡</div><h1>КПП Хайрок</h1><p>Национальный парк · Система контроля</p></div>
+        <div class="auth-error" id="loginError">Неверный логин или пароль</div>
+        <form id="loginForm" autocomplete="off">
+            <div class="field"><label>Логин</label><input type="text" id="loginUser" placeholder="Введите логин" autofocus></div>
+            <div class="field"><label>Пароль</label><input type="password" id="loginPass" placeholder="Введите пароль"></div>
+            <button type="submit" class="auth-btn">Войти в систему</button>
+        </form>
+        <div class="auth-footer">Нет аккаунта? <a onclick="showScreen('registerScreen')">Зарегистрироваться</a></div>
+    </div>
+</div>
+
+<!-- ===== REGISTER ===== -->
+<div class="auth hidden" id="registerScreen">
+    <div class="auth-card">
+        <div class="auth-logo"><div class="ic">📋</div><h1>Регистрация</h1><p>Заявка будет отправлена администратору</p></div>
+        <div class="auth-error" id="regError"></div>
+        <div class="auth-success" id="regSuccess"></div>
+        <form id="registerForm" autocomplete="off">
+            <div class="field"><label>Логин</label><input type="text" id="regLogin" placeholder="Придумайте логин" required></div>
+            <div class="field"><label>Пароль</label><input type="password" id="regPass" placeholder="Придумайте пароль" required></div>
+            <div class="field"><label>ФИО</label><input type="text" id="regName" placeholder="Ваше полное имя" required></div>
+            <div class="field"><label>Должность</label><input type="text" id="regRole" placeholder="Например: Охранник, Оператор"></div>
+            <button type="submit" class="auth-btn" id="regBtn">Отправить заявку</button>
+        </form>
+        <div class="auth-footer">Уже есть аккаунт? <a onclick="showScreen('loginScreen')">Войти</a></div>
+    </div>
+</div>
+
+<!-- ===== PENDING ===== -->
+<div class="auth hidden" id="pendingScreen">
+    <div class="auth-card" style="text-align:center">
+        <div class="auth-logo"><div class="ic">⏳</div><h1>Заявка на рассмотрении</h1><p>Администратор рассмотрит вашу заявку в ближайшее время</p></div>
+        <div style="padding:1rem 0;color:var(--dim);font-size:13px">
+            <p>После одобрения вы сможете войти в систему.</p>
+        </div>
+        <button class="auth-btn" onclick="showScreen('loginScreen')" style="background:rgba(255,255,255,0.06);color:var(--dim)">← Вернуться к входу</button>
+    </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app" id="app">
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">🛡</div>
+                <div class="logo-text">
+                    <h1>КПП Хайрок</h1>
+                    <span>ЧОП «25thcsvsmf» · Национальный парк</span>
+                </div>
             </div>
-            <div class="login-error" id="loginError">Неверный логин или пароль</div>
-            <form id="loginForm" autocomplete="off">
-                <div class="login-field">
-                    <label>Логин</label>
-                    <input type="text" id="loginUser" placeholder="Введите логин" autofocus>
-                </div>
-                <div class="login-field">
-                    <label>Пароль</label>
-                    <input type="password" id="loginPass" placeholder="Введите пароль">
-                </div>
-                <button type="submit" class="login-btn">Войти в систему</button>
+            <div class="header-right">
+                <span class="sync-badge online" id="syncBadge">● Синхронизация</span>
+                <div class="user-badge"><div class="dot" id="userDot"></div><span id="userName"></span></div>
+                <div class="clock" id="clock">--:--:--</div>
+                <button class="logout-btn" id="logoutBtn">Выйти</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="stats-bar">
+            <div class="stat-card"><div class="stat-label">На территории</div><div class="stat-row"><div class="stat-value green" id="statInside">0</div><div class="stat-sub">авто</div></div><div class="stat-note" id="noteInside">● Сейчас на объекте</div></div>
+            <div class="stat-card"><div class="stat-label">Зарегистрировано</div><div class="stat-row"><div class="stat-value blue" id="statTotal">0</div><div class="stat-sub">всего</div></div><div class="stat-note" id="noteTotal">● За всё время</div></div>
+            <div class="stat-card"><div class="stat-label">Истекают</div><div class="stat-row"><div class="stat-value yellow" id="statExpiring">0</div><div class="stat-sub">&lt; 7 дн.</div></div><div class="stat-note">⚠ Требуют внимания</div></div>
+            <div class="stat-card"><div class="stat-label">Просрочено</div><div class="stat-row"><div class="stat-value red" id="statExpired">0</div><div class="stat-sub">пропусков</div></div><div class="stat-note">✕ Нужно продлить</div></div>
+        </div>
+
+        <div class="tabs" id="tabsBar">
+            <button class="tab active" data-filter="all">Все <span class="tab-count" id="tabAll">0</span></button>
+            <button class="tab" data-filter="inside">На территории <span class="tab-count" id="tabInside">0</span></button>
+            <button class="tab" data-filter="outside">Выехали <span class="tab-count" id="tabOutside">0</span></button>
+            <button class="tab" data-filter="expired">Просрочены <span class="tab-count" id="tabExpired">0</span></button>
+            <button class="tab" data-filter="expiring">Истекают <span class="tab-count" id="tabExpiring">0</span></button>
+            <button class="tab" data-filter="map">🗺 Карта</button>
+            <button class="tab admin-only" data-filter="admin" style="display:none">⚙ Админ</button>
+        </div>
+
+        <aside class="panel" id="formPanel">
+            <div class="panel-header"><div class="panel-icon">＋</div><h2>Регистрация въезда</h2></div>
+            <div class="form-divider"></div>
+            <form id="entryForm" autocomplete="off">
+                <div class="form-group"><label class="form-label">Никнейм / Callsign</label><input type="text" class="form-input" id="nickname" placeholder="Wolf_01" required></div>
+                <div class="form-group"><label class="form-label">ФИО</label><input type="text" class="form-input" id="fullName" placeholder="Иванов Иван Иванович"></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Марка</label><input type="text" class="form-input" id="carMake" placeholder="Toyota" required></div><div class="form-group"><label class="form-label">Модель</label><input type="text" class="form-input" id="carModel" placeholder="Camry" required></div></div>
+                <div class="form-group"><label class="form-label">Гос. номер</label><input type="text" class="form-input" id="plateNumber" placeholder="А 123 БВ 777" required style="text-transform:uppercase;letter-spacing:1.5px;font-weight:700"></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Пропуск действ. до</label><input type="date" class="form-input" id="passExpiry" required></div><div class="form-group"><label class="form-label">Тип пропуска</label><select class="form-select" id="passType"><option value="permanent">Постоянный</option><option value="temporary">Временный</option><option value="single">Разовый</option><option value="vip">VIP</option></select></div></div>
+                <div class="form-group"><label class="form-label">Примечание</label><input type="text" class="form-input" id="note" placeholder="Цель визита, номер пропуска..."></div>
+                <button type="submit" class="btn-register" id="btnFormSubmit">Зарегистрировать въезд</button>
             </form>
-            <div class="login-footer">ЧОП «Защитник»</div>
-        </div>
-    </div>
+        </aside>
 
-    <!-- APP -->
-    <div class="app" id="app">
-        <header class="header">
-            <div class="header-inner">
-                <div class="logo">
-                    <div class="logo-icon">🛡</div>
-                    <div class="logo-text">
-                        <h1>КПП Хайрок</h1>
-                        <span>ЧОП «Защитник» · Национальный парк</span>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <span class="sync-badge online" id="syncBadge">⬤ Синхронизация</span>
-                    <div class="live-badge"><div class="live-dot"></div> Онлайн</div>
-                    <div class="clock" id="clock">--:--:--</div>
-                    <button class="logout-btn" id="logoutBtn">Выйти</button>
+        <section class="table-panel" id="tableSection">
+            <div class="table-header">
+                <div class="table-title"><div class="table-icon">📋</div><h2>Журнал пропусков</h2></div>
+                <div class="table-actions">
+                    <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="Поиск..."></div>
+                    <button class="btn-sm export" onclick="exportData()">↓ Экспорт</button>
+                    <button class="btn-sm import" onclick="document.getElementById('importFile').click()">↑ Импорт</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
                 </div>
             </div>
-        </header>
-
-        <main class="main">
-            <div class="stats-bar">
-                <div class="stat-card">
-                    <div class="stat-label">На территории</div>
-                    <div class="stat-row">
-                        <div class="stat-value green" id="statInside">0</div>
-                        <div class="stat-sub">авто</div>
-                    </div>
-                    <div class="stat-note" id="noteInside">● Сейчас на объекте</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Зарегистрировано</div>
-                    <div class="stat-row">
-                        <div class="stat-value blue" id="statTotal">0</div>
-                        <div class="stat-sub">всего</div>
-                    </div>
-                    <div class="stat-note" id="noteTotal">● За всё время</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Истекают</div>
-                    <div class="stat-row">
-                        <div class="stat-value yellow" id="statExpiring">0</div>
-                        <div class="stat-sub">&lt; 7 дн.</div>
-                    </div>
-                    <div class="stat-note">⚠ Требуют внимания</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Просрочено</div>
-                    <div class="stat-row">
-                        <div class="stat-value red" id="statExpired">0</div>
-                        <div class="stat-sub">пропусков</div>
-                    </div>
-                    <div class="stat-note">✕ Нужно продлить</div>
-                </div>
+            <div class="table-wrapper">
+                <table><thead><tr><th>Никнейм</th><th>Автомобиль</th><th>Номер</th><th>Пропуск</th><th>Статус</th><th>Въезд</th><th>На терр.</th><th>Действия</th></tr></thead><tbody id="recordsBody"></tbody></table>
+                <div class="empty-state" id="emptyState"><span class="icon">🗺</span><h3>Ещё нет записей</h3><p>Зарегистрируйте первый въезд через форму</p></div>
             </div>
+        </section>
 
-            <aside class="panel">
-                <div class="panel-header">
-                    <div class="panel-icon">＋</div>
-                    <h2>Регистрация въезда</h2>
-                </div>
-                <div class="form-divider"></div>
-                <form id="entryForm" autocomplete="off">
-                    <div class="form-group">
-                        <label class="form-label">Никнейм / Callsign</label>
-                        <input type="text" class="form-input" id="nickname" placeholder="Wolf_01" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ФИО</label>
-                        <input type="text" class="form-input" id="fullName" placeholder="Иванов Иван Иванович">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Марка</label>
-                            <input type="text" class="form-input" id="carMake" placeholder="Toyota" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Модель</label>
-                            <input type="text" class="form-input" id="carModel" placeholder="Camry" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Гос. номер</label>
-                        <input type="text" class="form-input" id="plateNumber" placeholder="А 123 БВ 777" required
-                               style="text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Пропуск действ. до</label>
-                            <input type="date" class="form-input" id="passExpiry" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Тип пропуска</label>
-                            <select class="form-select" id="passType">
-                                <option value="permanent">Постоянный</option>
-                                <option value="temporary">Временный</option>
-                                <option value="single">Разовый</option>
-                                <option value="vip">VIP</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Примечание</label>
-                        <input type="text" class="form-input" id="note" placeholder="Номер пропуска, цель визита...">
-                    </div>
-                    <button type="submit" class="btn-register">Зарегистрировать въезд</button>
-                </form>
-            </aside>
+        <section class="map-panel" id="mapSection">
+            <div class="panel-header"><div class="table-icon">🗺</div><h2>Карта территории парка Хайрок</h2></div>
+            <div class="map-container"><img src="hayrok_map.png" alt="Карта Хайрок" style="width:100%;max-height:80vh;object-fit:contain;display:block;border-radius:11px;background:#0a0f06" onerror="this.style.display='none';document.getElementById('mapFallback').style.display='block'"><div id="mapFallback" style="display:none;padding:3rem;text-align:center;color:var(--muted)"><div style="font-size:40px;margin-bottom:0.5rem">🗺</div><div style="font-size:14px;font-weight:700;color:var(--dim)">Карта не найдена</div><div style="font-size:12px;margin-top:4px">Поместите <b>hayrok_map.png</b> в папку с index.html</div></div></div>
+        </section>
 
-            <section class="table-panel">
-                <div class="table-header">
-                    <div class="table-title">
-                        <div class="table-icon">📋</div>
-                        <h2>Журнал пропусков</h2>
-                    </div>
-                    <div class="search-box">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" placeholder="Поиск по никнейму, номеру...">
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Никнейм</th>
-                                <th>Автомобиль</th>
-                                <th>Номер</th>
-                                <th>Пропуск</th>
-                                <th>Статус</th>
-                                <th>Въезд</th>
-                                <th>На терр.</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsBody"></tbody>
-                    </table>
-                    <div class="empty-state" id="emptyState">
-                        <span class="icon">🗺</span>
-                        <h3>Ещё нет записей</h3>
-                        <p>Зарегистрируйте первый въезд через форму</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div class="toast-container" id="toastContainer"></div>
-
-    <div class="modal-overlay" id="exitModal">
-        <div class="modal">
-            <div class="modal-icon">🚗</div>
-            <h3>Подтвердить выезд</h3>
-            <p id="exitModalText">Отметить выезд этого автомобиля с территории парка?</p>
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeExitModal()">Отмена</button>
-                <button class="btn-confirm" id="btnConfirmExit">Подтвердить выезд</button>
+        <section class="admin-panel" id="adminSection" style="display:none;grid-column:1/-1">
+            <div class="panel-header"><div class="table-icon" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.12)">⚙</div><h2>Панель администратора</h2></div>
+            <div class="admin-section">
+                <h3>⏳ Заявки на регистрацию <span class="cnt" id="pendingCount">0</span></h3>
+                <div id="pendingList"></div>
             </div>
-        </div>
-    </div>
+            <div class="admin-section">
+                <h3>👥 Все пользователи</h3>
+                <div id="usersList"></div>
+            </div>
+            <div class="admin-section">
+                <h3>📝 Логи действий</h3>
+                <div id="logsList"></div>
+            </div>
+        </section>
+    </main>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+<div class="toast-container" id="toastContainer"></div>
 
-    <script>
-        // FIREBASE CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyCYPR7TtADR6gRgzs_eSZlAc6tCXHQjx4Y",
-            authDomain: "enter-7ad5a.firebaseapp.com",
-            databaseURL: "https://enter-7ad5a-default-rtdb.firebaseio.com",
-            projectId: "enter-7ad5a",
-            storageBucket: "enter-7ad5a.firebasestorage.app",
-            messagingSenderId: "115636827493",
-            appId: "1:115636827493:web:ac5e3b816c8001ac4d1d8c"
+<!-- MODALS -->
+<div class="modal-overlay" id="exitModal"><div class="modal"><div class="modal-icon danger">🚗</div><h3>Подтвердить выезд</h3><p id="exitModalText">Отметить выезд?</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal('exitModal')">Отмена</button><button class="btn-confirm" id="btnConfirmExit">Подтвердить</button></div></div></div>
+<div class="modal-overlay" id="deleteModal"><div class="modal"><div class="modal-icon danger">🗑</div><h3>Удалить запись</h3><p id="deleteModalText">Действие необратимо. Продолжить?</p><div class="modal-actions"><button class="btn-cancel" onclick="closeModal('deleteModal')">Отмена</button><button class="btn-confirm" id="btnConfirmDelete">Удалить</button></div></div></div>
+<div class="modal-overlay" id="editModal"><div class="modal" style="max-width:460px"><div class="modal-icon" style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.12)">✏️</div><h3>Редактировать запись</h3><p style="margin-bottom:1rem">Измените нужные поля и сохраните.</p><input type="hidden" id="editId"><div style="display:grid;gap:0.625rem"><div><label class="form-label">Никнейм</label><input type="text" class="form-input" id="editNickname"></div><div><label class="form-label">ФИО</label><input type="text" class="form-input" id="editFullName"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem"><div><label class="form-label">Марка</label><input type="text" class="form-input" id="editCarMake"></div><div><label class="form-label">Модель</label><input type="text" class="form-input" id="editCarModel"></div></div><div><label class="form-label">Гос. номер</label><input type="text" class="form-input" id="editPlate" style="text-transform:uppercase;font-weight:700;letter-spacing:1px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem"><div><label class="form-label">Пропуск до</label><input type="date" class="form-input" id="editExpiry"></div><div><label class="form-label">Тип</label><select class="form-select" id="editType"><option value="permanent">Постоянный</option><option value="temporary">Временный</option><option value="single">Разовый</option><option value="vip">VIP</option></select></div></div><div><label class="form-label">Примечание</label><input type="text" class="form-input" id="editNote"></div></div><div class="modal-actions" style="margin-top:1.25rem"><button class="btn-cancel" onclick="closeModal('editModal')">Отмена</button><button class="btn-confirm green" id="btnConfirmEdit">Сохранить</button></div></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+<script>
+// ===== FIREBASE =====
+var firebaseConfig={apiKey:"AIzaSyCYPR7TtADR6gRgzs_eSZlAc6tCXHQjx4Y",authDomain:"enter-7ad5a.firebaseapp.com",databaseURL:"https://enter-7ad5a-default-rtdb.firebaseio.com",projectId:"enter-7ad5a",storageBucket:"enter-7ad5a.firebasestorage.app",messagingSenderId:"115636827493",appId:"1:115636827493:web:ac5e3b816c8001ac4d1d8c"};
+
+var db=null,syncOnline=false,syncTimer=null;
+var records=[],exitTargetId=null,deleteTargetId=null,highlightId=null;
+var users=[],logs=[],pendingUsers=[];
+var currentUser=null,currentFilter='all';
+
+var ADMIN={login:'no_name10289',pass:'turistez'};
+
+function initFirebase(){try{firebase.initializeApp(firebaseConfig);db=firebase.database();syncOnline=true;setSyncBadge(true);return true}catch(e){setSyncBadge(false);return false}}
+
+// ===== NAVIGATION =====
+function showScreen(id){
+    ['loginScreen','registerScreen','pendingScreen'].forEach(function(s){
+        var el=document.getElementById(s);
+        if(s===id)el.classList.remove('hidden');else el.classList.add('hidden');
+    });
+}
+
+// ===== AUTH =====
+document.getElementById('loginForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var u=document.getElementById('loginUser').value.trim();
+    var p=document.getElementById('loginPass').value.trim();
+    var err=document.getElementById('loginError');
+
+    // Admin check
+    if(u===ADMIN.login&&p===ADMIN.pass){
+        currentUser={login:u,role:'admin',name:'Администратор'};
+        sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
+        err.classList.remove('show');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('app').classList.add('active');
+        initApp();
+        return;
+    }
+
+    // User check from Firebase
+    if(!db){err.textContent='База данных недоступна';err.classList.add('show');return;}
+    db.ref('kpp_users/'+u).once('value',function(snap){
+        var user=snap.val();
+        if(!user){err.textContent='Пользователь не найден';err.classList.add('show');return;}
+        if(user.password!==p){err.textContent='Неверный пароль';err.classList.add('show');return;}
+        if(user.status==='pending'){showScreen('pendingScreen');err.classList.remove('show');return;}
+        if(user.status==='rejected'){err.textContent='Ваша заявка отклонена';err.classList.add('show');return;}
+        currentUser={login:u,role:user.role||'user',name:user.name,approvedBy:user.approvedBy,registeredAt:user.registeredAt};
+        sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
+        err.classList.remove('show');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('app').classList.add('active');
+        initApp();
+    });
+});
+
+// ===== REGISTER =====
+document.getElementById('registerForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var login=document.getElementById('regLogin').value.trim();
+    var pass=document.getElementById('regPass').value.trim();
+    var name=document.getElementById('regName').value.trim();
+    var role=document.getElementById('regRole').value.trim();
+    var err=document.getElementById('regError');
+    var suc=document.getElementById('regSuccess');
+
+    if(!login||!pass||!name){err.textContent='Заполните обязательные поля';err.classList.add('show');suc.classList.remove('show');return;}
+
+    if(!db){err.textContent='База данных недоступна';err.classList.add('show');return;}
+
+    db.ref('kpp_users/'+login).once('value',function(snap){
+        if(snap.val()){err.textContent='Этот логин уже занят';err.classList.add('show');suc.classList.remove('show');return;}
+
+        var userData={
+            login:login,
+            password:pass,
+            name:name,
+            role:'user',
+            status:'pending',
+            registeredAt:new Date().toISOString(),
+            approvedBy:null,
+            approvedAt:null
         };
 
-        let db = null, syncOnline = false, syncTimer = null;
-        let records = [], exitTargetId = null, highlightId = null;
-
-        function initFirebase() {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.database();
-                syncOnline = true;
-                setSyncBadge(true);
-                return true;
-            } catch (e) {
-                setSyncBadge(false);
-                return false;
-            }
-        }
-
-        // LOGIN
-        const LOGIN = { user: 'turist', pass: '25th' };
-
-        function checkAuth() { return sessionStorage.getItem('kpp_auth') === '1'; }
-
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            var u = document.getElementById('loginUser').value.trim();
-            var p = document.getElementById('loginPass').value.trim();
-            if (u === LOGIN.user && p === LOGIN.pass) {
-                sessionStorage.setItem('kpp_auth', '1');
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('app').classList.add('active');
-                document.getElementById('loginError').classList.remove('show');
-                initApp();
-            } else {
-                document.getElementById('loginError').classList.add('show');
-                document.getElementById('loginPass').value = '';
-            }
+        db.ref('kpp_users/'+login).set(userData).then(function(){
+            err.classList.remove('show');
+            suc.textContent='Заявка отправлена! Ожидайте одобрения администратора.';
+            suc.classList.add('show');
+            document.getElementById('registerForm').reset();
+            addLog('system',login+' подал заявку на регистрацию');
+        }).catch(function(){
+            err.textContent='Ошибка при отправке заявки';err.classList.add('show');
         });
+    });
+});
 
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            sessionStorage.removeItem('kpp_auth');
-            location.reload();
-        });
+document.getElementById('logoutBtn').addEventListener('click',function(){
+    sessionStorage.removeItem('kpp_user');
+    currentUser=null;
+    location.reload();
+});
 
-        // SYNC BADGE
-        function setSyncBadge(on) {
-            var b = document.getElementById('syncBadge');
-            if (!b) return;
-            b.className = 'sync-badge ' + (on ? 'online' : 'offline');
-            b.textContent = on ? '⬤ Синхронизация активна' : '✕ База не настроена';
-        }
+// ===== SYNC BADGE =====
+function setSyncBadge(on){var b=document.getElementById('syncBadge');if(!b)return;b.className='sync-badge '+(on?'online':'offline');b.textContent=on?'● Синхронизация активна':'✕ База не настроена'}
+function setSyncSyncing(){var b=document.getElementById('syncBadge');if(b){b.className='sync-badge syncing';b.textContent='⟳ Синхронизация...'}}
 
-        function setSyncSyncing() {
-            var b = document.getElementById('syncBadge');
-            if (b) { b.className = 'sync-badge syncing'; b.textContent = '⟳ Синхронизация...'; }
-        }
+// ===== FIREBASE CRUD =====
+function loadFB(path,cb){if(!db){cb(null);return}db.ref(path).once('value').then(function(s){cb(s.val())}).catch(function(){cb(null)})}
+function saveFB(path,data){if(!db)return;setSyncSyncing();if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(function(){db.ref(path).set(data).then(function(){setSyncBadge(true);syncOnline=true}).catch(function(){setSyncBadge(false);syncOnline=false})},300)}
+function listenFB(path,cb){if(!db)return;db.ref(path).on('value',function(s){cb(s.val())},function(){setSyncBadge(false);syncOnline=false})}
 
-        // FIREBASE CRUD
-        function loadFB(cb) {
-            if (!db) { cb(null); return; }
-            db.ref('kpp_records').once('value').then(function(s) { cb(s.val()); }).catch(function() { setSyncBadge(false); syncOnline = false; cb(null); });
-        }
+function saveLocal(){localStorage.setItem('kpp_records',JSON.stringify(records))}
+function loadLocal(){var d=localStorage.getItem('kpp_records');return d?JSON.parse(d):[]}
+function saveAll(){saveLocal();if(db&&syncOnline)saveFB('kpp_records',records)}
 
-        function saveFB(data) {
-            if (!db) return;
-            setSyncSyncing();
-            if (syncTimer) clearTimeout(syncTimer);
-            syncTimer = setTimeout(function() {
-                db.ref('kpp_records').set(data).then(function() { setSyncBadge(true); syncOnline = true; }).catch(function() { setSyncBadge(false); syncOnline = false; });
-            }, 300);
-        }
+// ===== LOGS =====
+function addLog(user,action){
+    var entry={user:user,action:action,time:new Date().toISOString()};
+    logs.unshift(entry);
+    if(logs.length>200)logs=logs.slice(0,200);
+    saveLocalLogs();
+    if(db&&syncOnline)saveFB('kpp_logs',logs);
+    renderAdminPanel();
+}
+function saveLocalLogs(){localStorage.setItem('kpp_logs',JSON.stringify(logs))}
+function loadLocalLogs(){var d=localStorage.getItem('kpp_logs');return d?JSON.parse(d):[]}
 
-        function listenFB() {
-            if (!db) return;
-            db.ref('kpp_records').on('value', function(s) {
-                var d = s.val();
-                if (d && Array.isArray(d) && JSON.stringify(d) !== JSON.stringify(records)) {
-                    records = d; saveLocal(); render(); updateStats();
-                }
-            }, function() { setSyncBadge(false); syncOnline = false; });
-        }
+// ===== INIT =====
+function initApp(){
+    records=loadLocal();
+    logs=loadLocalLogs();
 
-        // LOCAL
-        function saveLocal() { localStorage.setItem('kpp_records', JSON.stringify(records)); }
-        function loadLocal() { var d = localStorage.getItem('kpp_records'); return d ? JSON.parse(d) : []; }
+    // Show admin tab for admin
+    if(currentUser&&currentUser.role==='admin'){
+        document.querySelectorAll('.admin-only').forEach(function(el){el.style.display=''});
+    }
 
-        // INIT
-        function initApp() {
-            records = loadLocal();
-            if (initFirebase()) {
-                loadFB(function(data) {
-                    if (data && Array.isArray(data) && data.length > 0) {
-                        if (data.length >= records.length) records = data;
-                        else saveFB(records);
-                    } else if (records.length > 0) {
-                        saveFB(records);
-                    }
-                    saveLocal(); render(); updateStats(); listenFB();
-                });
-            } else {
-                render(); updateStats();
-            }
-            updateClock(); setInterval(updateClock, 1000);
-            var dd = new Date(); dd.setFullYear(dd.getFullYear() + 1);
-            var inp = document.getElementById('passExpiry');
-            if (inp) inp.valueAsDate = dd;
-            setInterval(function() { updateStats(); render(document.getElementById('searchInput').value); }, 60000);
-        }
+    document.getElementById('userName').textContent=currentUser?currentUser.name:'';
+    document.getElementById('userDot').className='dot '+(currentUser&&currentUser.role==='admin'?'admin':'user');
 
-        function updateClock() {
-            var el = document.getElementById('clock');
-            if (el) el.textContent = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-        }
-
-        function showToast(msg, type) {
-            type = type || 'success';
-            var c = document.getElementById('toastContainer');
-            var t = document.createElement('div');
-            t.className = 'toast ' + type;
-            t.textContent = msg;
-            c.appendChild(t);
-            setTimeout(function() { if (t.parentNode) t.remove(); }, 3400);
-        }
-
-        function getPassStatus(exp) {
-            var d = (new Date(exp) - new Date()) / 86400000;
-            if (d < 0) return { label: 'Просрочен', cls: 'badge-expired', icon: '✕' };
-            if (d < 7) return { label: Math.ceil(d) + ' дн.', cls: 'badge-warning', icon: '⚠' };
-            return { label: 'Действителен', cls: 'badge-active', icon: '✓' };
-        }
-
-        function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-        function render(filter) {
-            var tbody = document.getElementById('recordsBody');
-            var empty = document.getElementById('emptyState');
-            if (!tbody) return;
-            var f = (filter || '').toLowerCase();
-            var items = f ? records.filter(function(r) {
-                return r.nickname.toLowerCase().indexOf(f) >= 0 ||
-                    r.plateNumber.toLowerCase().indexOf(f) >= 0 ||
-                    (r.fullName && r.fullName.toLowerCase().indexOf(f) >= 0) ||
-                    r.carMake.toLowerCase().indexOf(f) >= 0;
-            }) : records;
-
-            if (items.length === 0 && records.length === 0) {
-                tbody.innerHTML = '';
-                if (empty) empty.style.display = '';
-                return;
-            }
-            if (empty) empty.style.display = 'none';
-
-            var labels = { permanent: 'Пост.', temporary: 'Врем.', single: 'Разов.', vip: 'VIP' };
-
-            tbody.innerHTML = items.map(function(r) {
-                var s = getPassStatus(r.passExpiry);
-                var entry = new Date(r.entryTime).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                var exp = new Date(r.passExpiry).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                var hl = r.id === highlightId ? 'highlight' : '';
-                return '<tr class="' + hl + '">' +
-                    '<td><div class="nickname-cell"><span class="nickname">' + esc(r.nickname) + '</span><span class="nickname-fullname">' + esc(r.fullName || '—') + '</span></div></td>' +
-                    '<td class="time-cell">' + esc(r.carMake) + ' ' + esc(r.carModel) + '</td>' +
-                    '<td><span class="plate">' + esc(r.plateNumber) + '</span></td>' +
-                    '<td class="time-cell"><div>' + exp + '</div><div class="pass-type-tag">' + (labels[r.passType] || r.passType) + '</div></td>' +
-                    '<td><span class="badge ' + s.cls + '">' + s.icon + ' ' + s.label + '</span></td>' +
-                    '<td class="time-cell">' + entry + '</td>' +
-                    '<td>' + (r.inside ? '<span class="badge badge-inside">● Внутри</span>' : '<span class="badge badge-outside">○ Уехал</span>') + '</td>' +
-                    '<td>' + (r.inside
-                        ? '<button class="btn-action btn-exit" data-id="' + r.id + '">Выезд</button>'
-                        : '<button class="btn-action btn-reenter" data-id="' + r.id + '">Повторно</button>') + '</td></tr>';
-            }).join('');
-
-            tbody.querySelectorAll('.btn-exit').forEach(function(b) { b.addEventListener('click', function() { openExitModal(this.dataset.id); }); });
-            tbody.querySelectorAll('.btn-reenter').forEach(function(b) { b.addEventListener('click', function() { reEnter(this.dataset.id); }); });
-            if (highlightId) setTimeout(function() { highlightId = null; }, 2000);
-        }
-
-        function updateStats() {
-            var now = new Date();
-            var inside = records.filter(function(r) { return r.inside; }).length;
-            var total = records.length;
-            var expiring = records.filter(function(r) { var d = (new Date(r.passExpiry) - now) / 86400000; return d >= 0 && d < 7; }).length;
-            var expired = records.filter(function(r) { return new Date(r.passExpiry) < now; }).length;
-            var e;
-            e = document.getElementById('statInside'); if (e) e.textContent = inside;
-            e = document.getElementById('statTotal'); if (e) e.textContent = total;
-            e = document.getElementById('statExpiring'); if (e) e.textContent = expiring;
-            e = document.getElementById('statExpired'); if (e) e.textContent = expired;
-            e = document.getElementById('noteInside'); if (e) e.textContent = inside > 0 ? '● Сейчас на объекте: ' + inside : '● Территория свободна';
-            e = document.getElementById('noteTotal'); if (e) e.textContent = total > 0 ? '● За всё время: ' + total : '● Записей пока нет';
-        }
-
-        function saveAll() { saveLocal(); if (db && syncOnline) saveFB(records); }
-
-        // FORM
-        document.getElementById('entryForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            var nickname = document.getElementById('nickname').value.trim();
-            var fullName = document.getElementById('fullName').value.trim();
-            var carMake = document.getElementById('carMake').value.trim();
-            var carModel = document.getElementById('carModel').value.trim();
-            var plateNumber = document.getElementById('plateNumber').value.trim().toUpperCase();
-            var passExpiry = document.getElementById('passExpiry').value;
-            var passType = document.getElementById('passType').value;
-            var note = document.getElementById('note').value.trim();
-
-            if (!nickname || !carMake || !carModel || !plateNumber || !passExpiry) {
-                showToast('Заполните все обязательные поля', 'error'); return;
-            }
-            if (records.some(function(r) { return r.plateNumber === plateNumber && r.inside; })) {
-                showToast(plateNumber + ' уже на территории', 'error'); return;
-            }
-            if (new Date(passExpiry) < new Date()) {
-                if (!confirm('Пропуск просрочен. Продолжить?')) return;
-            }
-
-            records.unshift({
-                id: Date.now().toString(36) + Math.random().toString(36).substr(2, 6),
-                nickname: nickname, fullName: fullName, carMake: carMake, carModel: carModel,
-                plateNumber: plateNumber, passExpiry: passExpiry, passType: passType, note: note,
-                entryTime: new Date().toISOString(), exitTime: null, inside: true
+    if(initFirebase()){
+        loadFB('kpp_records',function(data){
+            if(data&&Array.isArray(data)&&data.length>0){
+                if(data.length>=records.length)records=data;else saveFB('kpp_records',records);
+            }else if(records.length>0){saveFB('kpp_records',records)}
+            saveLocal();render();updateStats();listenFB('kpp_records',function(d){
+                if(d&&Array.isArray(d)&&JSON.stringify(d)!==JSON.stringify(records)){records=d;saveLocal();render();updateStats()}
             });
 
-            highlightId = records[0].id;
-            saveAll(); render(document.getElementById('searchInput').value); updateStats();
-            this.reset();
-            var dd = new Date(); dd.setFullYear(dd.getFullYear() + 1);
-            var inp = document.getElementById('passExpiry'); if (inp) inp.valueAsDate = dd;
-            document.getElementById('passType').value = passType;
-            showToast(nickname + ' (' + plateNumber + ') — въезд зарегистрирован');
+            // Load users
+            loadUsers();
+            // Load logs
+            loadFB('kpp_logs',function(d){if(d&&Array.isArray(d)){logs=d;saveLocalLogs();renderAdminPanel()}});
+            listenFB('kpp_users',function(){loadUsers()});
+            listenFB('kpp_logs',function(d){if(d&&Array.isArray(d)){logs=d;saveLocalLogs();renderAdminPanel()}});
         });
+    }else{render();updateStats()}
 
-        // EXIT
-        function openExitModal(id) {
-            exitTargetId = id;
-            var r = records.find(function(x) { return x.id === id; });
-            if (r) document.getElementById('exitModalText').textContent = 'Отметить выезд «' + r.nickname + '» (' + r.plateNumber + ')?';
-            document.getElementById('exitModal').classList.add('active');
-        }
+    updateClock();setInterval(updateClock,1000);
+    var dd=new Date();dd.setFullYear(dd.getFullYear()+1);
+    var inp=document.getElementById('passExpiry');if(inp)inp.valueAsDate=dd;
+    setInterval(function(){updateStats();render()},60000);
+}
 
-        function closeExitModal() { exitTargetId = null; document.getElementById('exitModal').classList.remove('active'); }
+function loadUsers(){
+    if(!db)return;
+    db.ref('kpp_users').once('value').then(function(snap){
+        var data=snap.val();
+        users=[];pendingUsers=[];
+        if(data){Object.keys(data).forEach(function(k){var u=data[k];u._key=k;users.push(u);if(u.status==='pending')pendingUsers.push(u)})}
+        renderAdminPanel();
+    });
+}
 
-        document.getElementById('btnConfirmExit').addEventListener('click', function() {
-            if (!exitTargetId) return;
-            var r = records.find(function(x) { return x.id === exitTargetId; });
-            if (r) {
-                r.inside = false; r.exitTime = new Date().toISOString();
-                saveAll(); render(document.getElementById('searchInput').value); updateStats();
-                showToast(r.nickname + ' (' + r.plateNumber + ') — выезд оформлен', 'info');
-            }
-            closeExitModal();
-        });
+function updateClock(){var el=document.getElementById('clock');if(el)el.textContent=new Date().toLocaleTimeString('ru-RU',{hour12:false})}
 
-        function reEnter(id) {
-            var r = records.find(function(x) { return x.id === id; });
-            if (r) {
-                r.inside = true; r.entryTime = new Date().toISOString(); r.exitTime = null;
-                saveAll(); render(document.getElementById('searchInput').value); updateStats();
-                showToast(r.nickname + ' (' + r.plateNumber + ') — повторный въезд', 'info');
-            }
-        }
+function showToast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast '+type;t.textContent=msg;document.getElementById('toastContainer').appendChild(t);setTimeout(function(){if(t.parentNode)t.remove()},3400)}
+function getPassStatus(exp){var d=(new Date(exp)-new Date())/86400000;if(d<0)return{label:'Просрочен',cls:'badge-expired',icon:'✕'};if(d<7)return{label:Math.ceil(d)+' дн.',cls:'badge-warning',icon:'⚠'};return{label:'Действителен',cls:'badge-active',icon:'✓'}}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
-        document.getElementById('searchInput').addEventListener('input', function() { render(this.value); });
-        document.getElementById('exitModal').addEventListener('click', function(e) { if (e.target === this) closeExitModal(); });
-        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeExitModal(); });
+// ===== RENDER =====
+function render(){
+    var tbody=document.getElementById('recordsBody');
+    var empty=document.getElementById('emptyState');
+    if(!tbody)return;
+    var now=new Date();
+    var items=records.slice();
 
-        // INIT
-        if (checkAuth()) {
+    if(currentFilter==='inside')items=items.filter(function(r){return r.inside});
+    else if(currentFilter==='outside')items=items.filter(function(r){return!r.inside});
+    else if(currentFilter==='expired')items=items.filter(function(r){return new Date(r.passExpiry)<now});
+    else if(currentFilter==='expiring')items=items.filter(function(r){var d=(new Date(r.passExpiry)-now)/86400000;return d>=0&&d<7});
+
+    var f=(document.getElementById('searchInput').value||'').toLowerCase();
+    if(f)items=items.filter(function(r){return r.nickname.toLowerCase().indexOf(f)>=0||r.plateNumber.toLowerCase().indexOf(f)>=0||(r.fullName&&r.fullName.toLowerCase().indexOf(f)>=0)||r.carMake.toLowerCase().indexOf(f)>=0});
+
+    if(items.length===0){tbody.innerHTML='';empty.style.display='';return}
+    empty.style.display='none';
+
+    var labels={permanent:'Пост.',temporary:'Врем.',single:'Разов.',vip:'VIP'};
+    tbody.innerHTML=items.map(function(r){
+        var s=getPassStatus(r.passExpiry);
+        var entry=new Date(r.entryTime).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        var exp=new Date(r.passExpiry).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+        var hl=r.id===highlightId?'highlight':'';
+        return '<tr class="'+hl+'"><td><div class="nickname-cell"><span class="nickname">'+esc(r.nickname)+'</span><span class="nickname-fullname">'+esc(r.fullName||'—')+'</span></div></td><td class="time-cell">'+esc(r.carMake)+' '+esc(r.carModel)+'</td><td><span class="plate">'+esc(r.plateNumber)+'</span></td><td class="time-cell"><div>'+exp+'</div><div class="pass-type-tag">'+(labels[r.passType]||'')+'</div></td><td><span class="badge '+s.cls+'">'+s.icon+' '+s.label+'</span></td><td class="time-cell">'+entry+'</td><td>'+(r.inside?'<span class="badge badge-inside">● Внутри</span>':'<span class="badge badge-outside">○ Уехал</span>')+'</td><td><div class="actions-cell">'+(r.inside?'<button class="btn-action btn-exit" data-id="'+r.id+'">Выезд</button>':'<button class="btn-action btn-reenter" data-id="'+r.id+'">Повторно</button>')+'<button class="btn-action btn-edit" data-id="'+r.id+'">✎</button><button class="btn-action btn-delete" data-id="'+r.id+'">✕</button></div></td></tr>';
+    }).join('');
+
+    tbody.querySelectorAll('.btn-exit').forEach(function(b){b.onclick=function(){openExitModal(this.dataset.id)}});
+    tbody.querySelectorAll('.btn-reenter').forEach(function(b){b.onclick=function(){reEnter(this.dataset.id)}});
+    tbody.querySelectorAll('.btn-edit').forEach(function(b){b.onclick=function(){openEditModal(this.dataset.id)}});
+    tbody.querySelectorAll('.btn-delete').forEach(function(b){b.onclick=function(){openDeleteModal(this.dataset.id)}});
+    if(highlightId)setTimeout(function(){highlightId=null},2000);
+    updateTabCounts();
+}
+
+function updateStats(){
+    var now=new Date();
+    var inside=records.filter(function(r){return r.inside}).length;
+    var total=records.length;
+    var expiring=records.filter(function(r){var d=(new Date(r.passExpiry)-now)/86400000;return d>=0&&d<7}).length;
+    var expired=records.filter(function(r){return new Date(r.passExpiry)<now}).length;
+    var e;
+    e=document.getElementById('statInside');if(e)e.textContent=inside;
+    e=document.getElementById('statTotal');if(e)e.textContent=total;
+    e=document.getElementById('statExpiring');if(e)e.textContent=expiring;
+    e=document.getElementById('statExpired');if(e)e.textContent=expired;
+    e=document.getElementById('noteInside');if(e)e.textContent=inside>0?'● Сейчас на объекте: '+inside:'● Территория свободна';
+    e=document.getElementById('noteTotal');if(e)e.textContent=total>0?'● За всё время: '+total:'● Записей пока нет';
+    updateTabCounts();
+}
+
+function updateTabCounts(){
+    var now=new Date();var el;
+    el=document.getElementById('tabAll');if(el)el.textContent=records.length;
+    el=document.getElementById('tabInside');if(el)el.textContent=records.filter(function(r){return r.inside}).length;
+    el=document.getElementById('tabOutside');if(el)el.textContent=records.filter(function(r){return!r.inside}).length;
+    el=document.getElementById('tabExpired');if(el)el.textContent=records.filter(function(r){return new Date(r.passExpiry)<now}).length;
+    el=document.getElementById('tabExpiring');if(el)el.textContent=records.filter(function(r){var d=(new Date(r.passExpiry)-now)/86400000;return d>=0&&d<7}).length;
+}
+
+// ===== ADMIN PANEL =====
+function renderAdminPanel(){
+    // Pending users
+    var pendingList=document.getElementById('pendingList');
+    var pc=document.getElementById('pendingCount');
+    pc.textContent=pendingUsers.length;
+    if(pendingUsers.length===0){pendingList.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:12px;text-align:center">Нет заявок на рассмотрении</div>';}
+    else{
+        pendingList.innerHTML=pendingUsers.map(function(u){
+            var when=new Date(u.registeredAt).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+            return '<div class="log-item"><span class="log-time">'+when+'</span><span class="log-user">'+esc(u.login)+'</span><span class="log-action">'+esc(u.name)+(u.role?' · '+esc(u.role):'')+'</span><button class="btn-action btn-approve" onclick="approveUser(\''+esc(u.login)+'\')">✓ Одобрить</button><button class="btn-action btn-reject" onclick="rejectUser(\''+esc(u.login)+'\')">✕ Отклонить</button></div>';
+        }).join('');
+    }
+
+    // All users
+    var usersList=document.getElementById('usersList');
+    var allUsers=users.filter(function(u){return u.login!==ADMIN.login});
+    if(allUsers.length===0){usersList.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:12px;text-align:center">Нет пользователей</div>';}
+    else{
+        usersList.innerHTML=allUsers.map(function(u){
+            var when=new Date(u.registeredAt).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+            var statusCls=u.status==='approved'?'badge-approved':u.status==='rejected'?'badge-rejected':'badge-pending';
+            var statusText=u.status==='approved'?'Активен':u.status==='rejected'?'Отклонён':'Ожидает';
+            var approved=u.approvedBy?' · Одобрен: '+esc(u.approvedBy):'';
+            return '<div class="log-item"><span class="log-user">'+esc(u.login)+'</span><span class="log-action">'+esc(u.name)+(u.role?' · '+esc(u.role):'')+'<br><span style="font-size:10px;color:var(--muted)">'+when+approved+'</span></span><span class="badge '+statusCls+'">'+statusText+'</span></div>';
+        }).join('');
+    }
+
+    // Logs
+    var logsList=document.getElementById('logsList');
+    if(logs.length===0){logsList.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:12px;text-align:center">Логов пока нет</div>';}
+    else{
+        logsList.innerHTML=logs.slice(0,100).map(function(l){
+            var when=new Date(l.time).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+            return '<div class="log-item"><span class="log-time">'+when+'</span><span class="log-user">'+esc(l.user)+'</span><span class="log-action">'+esc(l.action)+'</span></div>';
+        }).join('');
+    }
+}
+
+function approveUser(login){
+    if(!db)return;
+    db.ref('kpp_users/'+login).update({status:'approved',approvedBy:currentUser.login,approvedAt:new Date().toISOString()}).then(function(){
+        addLog(currentUser.login,'Одобрил регистрацию: '+login);
+        showToast(login+' одобрен','success');
+        loadUsers();
+    });
+}
+
+function rejectUser(login){
+    if(!db)return;
+    db.ref('kpp_users/'+login).update({status:'rejected',approvedBy:currentUser.login,approvedAt:new Date().toISOString()}).then(function(){
+        addLog(currentUser.login,'Отклонил регистрацию: '+login);
+        showToast(login+' отклонён','info');
+        loadUsers();
+    });
+}
+
+// ===== TABS =====
+document.getElementById('tabsBar').addEventListener('click',function(e){
+    var tab=e.target.closest('.tab');if(!tab)return;
+    var filter=tab.dataset.filter;
+
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+    tab.classList.add('active');
+
+    if(filter==='map'){
+        document.getElementById('tableSection').style.display='none';
+        document.getElementById('formPanel').style.display='none';
+        document.getElementById('adminSection').style.display='none';
+        document.getElementById('mapSection').classList.add('active');
+        document.getElementById('mapSection').style.display='';
+        return;
+    }
+    if(filter==='admin'){
+        document.getElementById('tableSection').style.display='none';
+        document.getElementById('formPanel').style.display='none';
+        document.getElementById('mapSection').classList.remove('active');
+        document.getElementById('mapSection').style.display='none';
+        document.getElementById('adminSection').style.display='';
+        renderAdminPanel();
+        return;
+    }
+
+    document.getElementById('tableSection').style.display='';
+    document.getElementById('formPanel').style.display='';
+    document.getElementById('mapSection').classList.remove('active');
+    document.getElementById('mapSection').style.display='none';
+    document.getElementById('adminSection').style.display='none';
+    currentFilter=filter;
+    render();
+});
+
+// ===== FORM =====
+document.getElementById('entryForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var nickname=document.getElementById('nickname').value.trim();
+    var fullName=document.getElementById('fullName').value.trim();
+    var carMake=document.getElementById('carMake').value.trim();
+    var carModel=document.getElementById('carModel').value.trim();
+    var plateNumber=document.getElementById('plateNumber').value.trim().toUpperCase();
+    var passExpiry=document.getElementById('passExpiry').value;
+    var passType=document.getElementById('passType').value;
+    var note=document.getElementById('note').value.trim();
+
+    if(!nickname||!carMake||!carModel||!plateNumber||!passExpiry){showToast('Заполните все обязательные поля','error');return}
+    if(records.some(function(r){return r.plateNumber===plateNumber&&r.inside})){showToast(plateNumber+' уже на территории','error');return}
+    if(new Date(passExpiry)<new Date()){if(!confirm('Пропуск просрочен. Продолжить?'))return}
+
+    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).substr(2,6),nickname:nickname,fullName:fullName,carMake:carMake,carModel:carModel,plateNumber:plateNumber,passExpiry:passExpiry,passType:passType,note:note,entryTime:new Date().toISOString(),exitTime:null,inside:true});
+    highlightId=records[0].id;
+    saveAll();render();updateStats();
+    addLog(currentUser?currentUser.login:'system','Зарегистрировал въезд: '+nickname+' ('+plateNumber+')');
+    this.reset();
+    var dd=new Date();dd.setFullYear(dd.getFullYear()+1);
+    var inp=document.getElementById('passExpiry');if(inp)inp.valueAsDate=dd;
+    document.getElementById('passType').value=passType;
+    showToast(nickname+' ('+plateNumber+') — въезд зарегистрирован');
+});
+
+// ===== EXIT =====
+function openExitModal(id){exitTargetId=id;var r=records.find(function(x){return x.id===id});if(r)document.getElementById('exitModalText').textContent='Отметить выезд «'+r.nickname+'» ('+r.plateNumber+')?';document.getElementById('exitModal').classList.add('active')}
+document.getElementById('btnConfirmExit').addEventListener('click',function(){
+    if(!exitTargetId)return;var r=records.find(function(x){return x.id===exitTargetId});
+    if(r){r.inside=false;r.exitTime=new Date().toISOString();saveAll();render();updateStats();addLog(currentUser?currentUser.login:'system','Оформил выезд: '+r.nickname+' ('+r.plateNumber+')');showToast(r.nickname+' ('+r.plateNumber+') — выезд оформлен','info')}
+    closeModal('exitModal');
+});
+function reEnter(id){var r=records.find(function(x){return x.id===id});if(r){r.inside=true;r.entryTime=new Date().toISOString();r.exitTime=null;saveAll();render();updateStats();addLog(currentUser?currentUser.login:'system','Повторный въезд: '+r.nickname+' ('+r.plateNumber+')');showToast(r.nickname+' ('+r.plateNumber+') — повторный въезд','info')}}
+
+// ===== DELETE =====
+function openDeleteModal(id){deleteTargetId=id;var r=records.find(function(x){return x.id===id});if(r)document.getElementById('deleteModalText').textContent='Удалить «'+r.nickname+'» ('+r.plateNumber+')? Действие необратимо.';document.getElementById('deleteModal').classList.add('active')}
+document.getElementById('btnConfirmDelete').addEventListener('click',function(){
+    if(!deleteTargetId)return;var r=records.find(function(x){return x.id===deleteTargetId});
+    var info=r?r.nickname+' ('+r.plateNumber+')':'';
+    records=records.filter(function(x){return x.id!==deleteTargetId});saveAll();render();updateStats();
+    addLog(currentUser?currentUser.login:'system','Удалил запись: '+info);showToast('Запись удалена','error');
+    closeModal('deleteModal');
+});
+
+// ===== EDIT =====
+function openEditModal(id){var r=records.find(function(x){return x.id===id});if(!r)return;document.getElementById('editId').value=r.id;document.getElementById('editNickname').value=r.nickname;document.getElementById('editFullName').value=r.fullName||'';document.getElementById('editCarMake').value=r.carMake;document.getElementById('editCarModel').value=r.carModel;document.getElementById('editPlate').value=r.plateNumber;document.getElementById('editExpiry').value=r.passExpiry;document.getElementById('editType').value=r.passType;document.getElementById('editNote').value=r.note||'';document.getElementById('editModal').classList.add('active')}
+document.getElementById('btnConfirmEdit').addEventListener('click',function(){
+    var id=document.getElementById('editId').value;var r=records.find(function(x){return x.id===id});if(!r)return;
+    r.nickname=document.getElementById('editNickname').value.trim();r.fullName=document.getElementById('editFullName').value.trim();r.carMake=document.getElementById('editCarMake').value.trim();r.carModel=document.getElementById('editCarModel').value.trim();r.plateNumber=document.getElementById('editPlate').value.trim().toUpperCase();r.passExpiry=document.getElementById('editExpiry').value;r.passType=document.getElementById('editType').value;r.note=document.getElementById('editNote').value.trim();
+    saveAll();render();updateStats();addLog(currentUser?currentUser.login:'system','Редактировал запись: '+r.nickname+' ('+r.plateNumber+')');showToast('Запись обновлена','info');closeModal('editModal');
+});
+
+// ===== MODAL CLOSE =====
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+document.getElementById('exitModal').addEventListener('click',function(e){if(e.target===this)closeModal('exitModal')});
+document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeModal('deleteModal')});
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeModal('editModal')});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeModal('exitModal');closeModal('deleteModal');closeModal('editModal')}});
+
+// ===== EXPORT / IMPORT =====
+function exportData(){var blob=new Blob([JSON.stringify(records,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kpp_export_'+new Date().toISOString().slice(0,10)+'.json';a.click();showToast('Экспортировано '+records.length+' записей','info');addLog(currentUser?currentUser.login:'system','Экспорт данных ('+records.length+' записей)')}
+function importData(e){var file=e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){try{var data=JSON.parse(ev.target.result);if(!Array.isArray(data))throw 0;var added=0;data.forEach(function(r){if(r.id&&!records.some(function(x){return x.id===r.id})){records.push(r);added++}});saveAll();render();updateStats();addLog(currentUser?currentUser.login:'system','Импорт данных ('+added+' новых)');showToast('Импортировано '+added+' новых записей','success')}catch(ex){showToast('Ошибка: неверный формат','error')}};reader.readAsText(file);e.target.value=''}
+document.getElementById('searchInput').addEventListener('input',function(){render()});
+
+// ===== INIT =====
+(function(){
+    var saved=sessionStorage.getItem('kpp_user');
+    if(saved){
+        try{currentUser=JSON.parse(saved)}catch(e){currentUser=null}
+        if(currentUser){
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('app').classList.add('active');
             initApp();
-        } else {
-            document.getElementById('loginUser').focus();
         }
-    </script>
+    }else{
+        document.getElementById('loginUser').focus();
+    }
+})();
+</script>
 </body>
 </html>

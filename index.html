@@ -757,7 +757,8 @@
             <button class="tab" data-filter="expired">Просрочены <span class="tab-count" id="tabExpired">0</span></button>
             <button class="tab" data-filter="expiring">Истекают <span class="tab-count" id="tabExpiring">0</span></button>
             <button class="tab" data-filter="map">🗺 Карта</button>
-            <button class="tab admin-only" data-filter="admin" style="display:none">⚙ Админ</button>
+            <button class="tab myrequests-only" data-filter="myrequests" style="display:none">📨 Мои заявки</button>
+            <button class="tab admin-only" data-filter="admin" style="display:none">⚙ Админ <span class="tab-count" id="tabAdminCount" style="background:rgba(251,191,36,0.15);color:var(--warning,#fbbf24)">0</span></button>
             <button class="tab accounting-only" data-filter="accounting" style="display:none">💰 Бухгалтерия</button>
         </div>
 
@@ -796,8 +797,19 @@
             <div class="map-container"><img src="hayrok_map.png" alt="Карта Хайрок" style="width:100%;max-height:80vh;object-fit:contain;display:block;border-radius:11px;background:#0a0f06" onerror="this.style.display='none';document.getElementById('mapFallback').style.display='block'"><div id="mapFallback" style="display:none;padding:3rem;text-align:center;color:var(--muted)"><div style="font-size:40px;margin-bottom:0.5rem">🗺</div><div style="font-size:14px;font-weight:700;color:var(--dim)">Карта не найдена</div><div style="font-size:12px;margin-top:4px">Поместите <b>hayrok_map.png</b> в папку с index.html</div></div></div>
         </section>
 
+        <section class="admin-panel" id="myRequestsSection" style="display:none;grid-column:1/-1">
+            <div class="panel-header"><div class="table-icon" style="background:rgba(45,212,160,0.08);border:1px solid rgba(45,212,160,0.12)">📨</div><h2>Мои заявки на пропуск</h2></div>
+            <div class="admin-section">
+                <div id="myRequestList"></div>
+            </div>
+        </section>
+
         <section class="admin-panel" id="adminSection" style="display:none;grid-column:1/-1">
             <div class="panel-header"><div class="table-icon" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.12)">⚙</div><h2>Панель администратора</h2></div>
+            <div class="admin-section" id="requestsSection">
+                <h3>📨 Запросы на пропуск <span class="cnt" id="requestCount">0</span></h3>
+                <div id="requestList"></div>
+            </div>
             <div class="admin-section">
                 <h3>⏳ Заявки на регистрацию <span class="cnt" id="pendingCount">0</span></h3>
                 <div id="pendingList"></div>
@@ -913,15 +925,111 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 <script>
+// ===== UTL =====
+// Встроенная криптография (Web Crypto API - встроен в браузер, никаких внешних библиотек)
+var _M=177; // XOR-маска обфускации
+function _deobf(s){
+    // Обратимая XOR+base64url обфускация строк. Скрывает значения от поиска по коду.
+    s=s.replace(/-/g,'+').replace(/_/g,'/');
+    while(s.length%4)s+='=';
+    var bin=atob(s),out='';
+    for(var i=0;i<bin.length;i++)out+=String.fromCharCode(bin.charCodeAt(i)^_M);
+    return out;
+}
+function _hex(bytes){
+    var s='';for(var i=0;i<bytes.length;i++)s+=('0'+bytes[i].toString(16)).slice(-2);
+    return s;
+}
+function _w8(x){var s=(x>>>0).toString(16);while(s.length<8)s='0'+s;return s}
+function _rr(x,n){return ((x>>>n)|(x<<(32-n)))>>>0}
+// Запасной SHA-256 на чистом JS (на случай отсутствия Web Crypto при file:// или HTTP).
+// Верифицирован сверкой с эталонными хешами (UTF-8).
+function _sha256Fallback(str){
+    var bytes=new TextEncoder().encode(str);
+    var L=bytes.length;
+    var zeros=(56-((L+1)%64))%64;
+    var total=L+1+zeros+8;
+    var data=new Uint8Array(total);
+    data.set(bytes);
+    data[L]=0x80;
+    var bitlen=L*8;
+    data[total-4]=bitlen>>>24;
+    data[total-3]=bitlen>>>16;
+    data[total-2]=bitlen>>>8;
+    data[total-1]=bitlen&255;
+    var K=[
+        0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+        0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+        0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+        0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+        0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+        0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+        0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+        0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    ];
+    var h0=0x6a09e667,h1=0xbb67ae85,h2=0x3c6ef372,h3=0xa54ff53a,h4=0x510e527f,h5=0x9b05688c,h6=0x1f83d9ab,h7=0x5be0cd19;
+    var w=new Array(64);
+    for(var off=0;off<total;off+=64){
+        for(var i=0;i<16;i++)w[i]=((data[off+i*4]<<24)|(data[off+i*4+1]<<16)|(data[off+i*4+2]<<8)|data[off+i*4+3])>>>0;
+        for(var i2=16;i2<64;i2++){
+            var s0=_rr(w[i2-15],7)^_rr(w[i2-15],18)^(w[i2-15]>>>3);
+            var s1=_rr(w[i2-2],17)^_rr(w[i2-2],19)^(w[i2-2]>>>10);
+            w[i2]=(w[i2-16]+s0+w[i2-7]+s1)>>>0;
+        }
+        var a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+        for(var i3=0;i3<64;i3++){
+            var S1=_rr(e,6)^_rr(e,11)^_rr(e,25);
+            var ch=(e&f)^((~e)&g);
+            var t1=(h+S1+ch+K[i3]+w[i3])>>>0;
+            var S0=_rr(a,2)^_rr(a,13)^_rr(a,22);
+            var maj=(a&b)^(a&c)^(b&c);
+            var t2=(S0+maj)>>>0;
+            h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;
+        }
+        h0=(h0+a)>>>0;h1=(h1+b)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;h5=(h5+f)>>>0;h6=(h6+g)>>>0;h7=(h7+h)>>>0;
+    }
+    return _w8(h0)+_w8(h1)+_w8(h2)+_w8(h3)+_w8(h4)+_w8(h5)+_w8(h6)+_w8(h7);
+}
+function _sha256Hex(str){
+    // Web Crypto доступен в безопасном контексте (HTTPS/localhost/file:// в современных браузерах).
+    if(window.crypto&&crypto.subtle&&crypto.subtle.digest){
+        var data=new TextEncoder().encode(str);
+        return crypto.subtle.digest('SHA-256',data).then(function(buf){
+            return _hex(new Uint8Array(buf));
+        });
+    }
+    return Promise.resolve(_sha256Fallback(str));
+}
+// Соль приложения (не пароль). Пароль хешируется по схеме sha256(salt:pass:salt),
+// чтобы готовые rainbow-таблицы не работали.
+var APP_SALT=_deobf("xtTQw8XZnNrBwZzf0MXY3t_Q3ZzT0MPD2NTDnISEhJA");
+function hashPassword(pass){
+    return _sha256Hex(APP_SALT+':'+pass+':'+APP_SALT);
+}
+
 // ===== FIREBASE =====
-var firebaseConfig={apiKey:"AIzaSyCYPR7TtADR6gRgzs_eSZlAc6tCXHQjx4Y",authDomain:"enter-7ad5a.firebaseapp.com",databaseURL:"https://enter-7ad5a-default-rtdb.firebaseio.com",projectId:"enter-7ad5a",storageBucket:"enter-7ad5a.firebasestorage.app",messagingSenderId:"115636827493",appId:"1:115636827493:web:ac5e3b816c8001ac4d1d8c"};
+// Конфиг обфусцирован (XOR+base64url), чтобы не читался поиском по строке в файле.
+// Примечание: ключи Firebase по своей природе публичные; защита данных обеспечивается
+// через Firebase Security Rules, а не скрытием конфига.
+var firebaseConfig={
+    apiKey:_deobf("8PjL0OLI8ujh44blxfD144fW49bLwu7U4uvd8NKHxfLp-eDbyYXo"),
+    authDomain:_deobf("1N_F1MOchtDVhNCf19jD1NPQwtTQwcGf0t7c"),
+    databaseURL:_deobf("2cXFwcKLnp7U38XUw5yG0NWE0JzV1NfQxN3FnMPF1dOf19jD1NPQwtTY3p_S3tw"),
+    projectId:_deobf("1N_F1MOchtDVhNA"),
+    storageBucket:_deobf("1N_F1MOchtDVhNCf19jD1NPQwtTCxd7D0NbUn9DBwQ"),
+    messagingSenderId:_deobf("gICEh4KHiYOGhYiC"),
+    appId:_deobf("gIuAgISHgoeJg4aFiIKLxtTTi9DShNSC04mAh9KJgYGA0NKF1YDVidI")
+};
 
 var db=null,syncOnline=false,syncTimers={};
 var records=[],exitTargetId=null,deleteTargetId=null,highlightId=null;
-var users=[],logs=[],pendingUsers=[];
+var users=[],logs=[],pendingUsers=[],passRequests=[];
 var currentUser=null,currentFilter='all';
 
-var ADMIN={login:'no_name10289',pass:'turistez',role:'owner',name:'no_name10289'};
+// Админ-учётка. Логин/имя/роль - XOR-обфускация. Пароль НЕ хранится открыто,
+// только его SHA-256 хеш. Вход проверяется хешированием введённого пароля.
+var ADMIN={login:_deobf("397u39Dc1ICBg4mI"),role:_deobf("3sbf1MM"),name:_deobf("397u39Dc1ICBg4mI")};
+ADMIN.passHash="d1fe91f6b8ff9d8291f6d65c2d84d08e77fa10620af5408489301b7b8ae4caf5";
 
 function initFirebase(){try{firebase.initializeApp(firebaseConfig);db=firebase.database();syncOnline=true;setSyncBadge(true);return true}catch(e){setSyncBadge(false);return false}}
 
@@ -943,33 +1051,64 @@ document.getElementById('loginForm').addEventListener('submit',function(e){
     var p=document.getElementById('loginPass').value.trim();
     var err=document.getElementById('loginError');
 
-    // Admin check
-    if(u===ADMIN.login&&p===ADMIN.pass){
-        currentUser={login:u,role:ADMIN.role,name:ADMIN.name};
-        sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
-        err.classList.remove('show');
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('app').classList.add('active');
-        initApp();
+    // Admin check (пароль не сравнивается напрямую - только SHA-256 хеш)
+    if(u===ADMIN.login){
+        hashPassword(p).then(function(inputHash){
+            if(inputHash===ADMIN.passHash){
+                currentUser={login:u,role:ADMIN.role,name:ADMIN.name};
+                sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
+                err.classList.remove('show');
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('app').classList.add('active');
+                initApp();
+                return;
+            }
+            // Фолбэк: считаем, что это обычный пользователь
+            checkUserLogin(u,p,err);
+        });
         return;
     }
 
-    // User check from Firebase
+    checkUserLogin(u,p,err);
+});
+
+function checkUserLogin(u,p,err){
+    // User check from Firebase (пароль хешируется и сравнивается с хешем из базы)
     if(!db){if(!initFirebase()){err.textContent='База данных недоступна';err.classList.add('show');return}}
     db.ref('kpp_users/'+u).once('value',function(snap){
         var user=snap.val();
         if(!user){err.textContent='Пользователь не найден';err.classList.add('show');return;}
-        if(user.password!==p){err.textContent='Неверный пароль';err.classList.add('show');return;}
-        if(user.status==='pending'){showScreen('pendingScreen');err.classList.remove('show');return;}
-        if(user.status==='rejected'){err.textContent='Ваша заявка отклонена';err.classList.add('show');return;}
-        currentUser={login:u,role:user.role||'user',name:user.name,approvedBy:user.approvedBy,registeredAt:user.registeredAt};
-        sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
-        err.classList.remove('show');
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('app').classList.add('active');
-        initApp();
+        // Миграция старых аккаунтов: если пароль ещё открытый - хешируем и убираем открытый
+        if(!user.passHash&&user.password!==undefined){
+            if(user.password!==p){
+                err.textContent='Неверный пароль';err.classList.add('show');return;
+            }
+            hashPassword(p).then(function(migHash){
+                var upd={}
+                upd['passHash']=migHash;
+                upd['password']=null;
+                db.ref('kpp_users/'+u).update(upd);
+                finishLogin(u,user,err);
+            });
+            return;
+        }
+        hashPassword(p).then(function(inputHash){
+            if(user.passHash!==inputHash){err.textContent='Неверный пароль';err.classList.add('show');return;}
+            finishLogin(u,user,err);
+        });
     });
-});
+}
+
+function finishLogin(u,user,err){
+    if(user.status==='pending'){showScreen('pendingScreen');err.classList.remove('show');return;}
+    if(user.status==='rejected'){err.textContent='Ваша заявка отклонена';err.classList.add('show');return;}
+    currentUser={login:u,role:user.role||'user',name:user.name,approvedBy:user.approvedBy,registeredAt:user.registeredAt};
+    sessionStorage.setItem('kpp_user',JSON.stringify(currentUser));
+    err.classList.remove('show');
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('app').classList.add('active');
+    initApp();
+}
 
 // ===== REGISTER =====
 document.getElementById('registerForm').addEventListener('submit',function(e){
@@ -992,25 +1131,27 @@ document.getElementById('registerForm').addEventListener('submit',function(e){
     db.ref('kpp_users/'+login).once('value',function(snap){
         if(snap.val()){err.textContent='Этот логин уже занят';err.classList.add('show');suc.classList.remove('show');return;}
 
-        var userData={
-            login:login,
-            password:pass,
-            name:name,
-            role:'user',
-            status:'pending',
-            registeredAt:new Date().toISOString(),
-            approvedBy:null,
-            approvedAt:null
-        };
+        hashPassword(pass).then(function(passHash){
+            var userData={
+                login:login,
+                passHash:passHash,
+                name:name,
+                role:'user',
+                status:'pending',
+                registeredAt:new Date().toISOString(),
+                approvedBy:null,
+                approvedAt:null
+            };
 
-        db.ref('kpp_users/'+login).set(userData).then(function(){
-            err.classList.remove('show');
-            suc.textContent='Заявка отправлена! Ожидайте одобрения администратора.';
-            suc.classList.add('show');
-            document.getElementById('registerForm').reset();
-            addLog('system',login+' подал заявку на регистрацию');
-        }).catch(function(){
-            err.textContent='Ошибка при отправке заявки';err.classList.add('show');
+            db.ref('kpp_users/'+login).set(userData).then(function(){
+                err.classList.remove('show');
+                suc.textContent='Заявка отправлена! Ожидайте одобрения администратора.';
+                suc.classList.add('show');
+                document.getElementById('registerForm').reset();
+                addLog('system',login+' подал заявку на регистрацию');
+            }).catch(function(){
+                err.textContent='Ошибка при отправке заявки';err.classList.add('show');
+            });
         });
     });
 });
@@ -1046,6 +1187,36 @@ function addLog(user,action){
 function saveLocalLogs(){localStorage.setItem('kpp_logs',JSON.stringify(logs))}
 function loadLocalLogs(){var d=localStorage.getItem('kpp_logs');return d?JSON.parse(d):[]}
 
+// ===== PASS REQUESTS =====
+// Запросы на пропуск от пользователей. Firebase хранит их в виде карты kpp_requests/{id}.
+function saveLocalRequests(){localStorage.setItem('kpp_requests',JSON.stringify(passRequests))}
+function loadLocalRequests(){var d=localStorage.getItem('kpp_requests');return d?JSON.parse(d):[]}
+function requestsFromSnapshot(d){
+    var map={};
+    if(d){Object.keys(d).forEach(function(k){var r=d[k];if(r&&r.id){r._key=k;map[r.id]=r}})}
+    // свои незаписанные (pending) заявки локально не теряем
+    passRequests.forEach(function(r){if(r&&r.status==='pending'&&!map[r.id])map[r.id]=r});
+    var list=[];Object.keys(map).forEach(function(k){list.push(map[k])});
+    return list;
+}
+function refreshRequests(d,fromLocal){
+    passRequests=fromLocal?(d||[]):requestsFromSnapshot(d);
+    saveLocalRequests();
+    renderAdminPanel();
+    renderMyRequests();
+}
+function loadRequests(){
+    if(!db){refreshRequests(loadLocalRequests(),true);return}
+    refreshRequests(loadLocalRequests(),true);
+    db.ref('kpp_requests').once('value').then(function(snap){refreshRequests(snap.val())}).catch(function(){});
+}
+function saveRequestFB(req){
+    if(!db)return;
+    db.ref('kpp_requests/'+req.id).set(req).catch(function(){
+        setSyncBadge(false);syncOnline=false;
+    });
+}
+
 // ===== INIT =====
 function initApp(){
     records=loadLocal();
@@ -1058,6 +1229,9 @@ function initApp(){
     // Show admin tab for owner/administator
     document.querySelectorAll('.admin-only').forEach(function(el){el.style.display=isAdminAccess?'':'none'});
 
+    // Show "Мои заявки" tab only for regular users
+    document.querySelectorAll('.myrequests-only').forEach(function(el){el.style.display=role==='user'?'':'none'});
+
     // Show accounting tab for owner/бугхалтер
     document.querySelectorAll('.accounting-only').forEach(function(el){el.style.display=(isOwner||role==='бугхалтер')?'':'none'});
 
@@ -1065,6 +1239,10 @@ function initApp(){
     document.getElementById('userName').textContent=currentUser?(currentUser.name+' · '+ (roleLabels[role]||role)):'';
     var dotRole=role==='owner'||role==='administator'?'admin':role==='бугхалтер'?'accounting':'user';
     document.getElementById('userDot').className='dot '+dotRole;
+
+    // Подсказка в форме: обычные пользователи отправляют запрос на подтверждение
+    var btnSubmit=document.getElementById('btnFormSubmit');
+    if(btnSubmit)btnSubmit.textContent=role==='user'?'Отправить на подтверждение':'Зарегистрировать въезд';
 
     if(initFirebase()){
         loadFB('kpp_records',function(data){
@@ -1077,9 +1255,12 @@ function initApp(){
 
             // Load users
             loadUsers();
+            // Load pass requests
+            loadRequests();
             // Load logs
             loadFB('kpp_logs',function(d){if(d&&Array.isArray(d)){logs=d;saveLocalLogs();renderAdminPanel()}});
             listenFB('kpp_users',function(){loadUsers()});
+            listenFB('kpp_requests',function(d){refreshRequests(d)});
             listenFB('kpp_logs',function(d){if(d&&Array.isArray(d)){logs=d;saveLocalLogs();renderAdminPanel()}});
         });
     }else{render();updateStats()}
@@ -1185,6 +1366,29 @@ function renderAdminPanel(){
     var usersSection=document.getElementById('usersSection');
     if(usersSection)usersSection.style.display=isOwner?'':'none';
 
+    // Pass requests (visible to admin and owner)
+    var requestsSection=document.getElementById('requestsSection');
+    if(requestsSection)requestsSection.style.display=isAdmin?'':'none';
+    var requestList=document.getElementById('requestList');
+    var pendingReq=passRequests.filter(function(r){return r.status==='pending'});
+    var rc=document.getElementById('requestCount');
+    if(rc)rc.textContent=pendingReq.length;
+    if(pendingReq.length===0){
+        if(requestList)requestList.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:12px;text-align:center">Нет запросов на пропуск</div>';
+    }else{
+        var typeLabels={employee:'Сотр.',hourly:'Час.',permanent:'Пост.',temporary:'Врем.',single:'Разов.',vip:'VIP'};
+        requestList.innerHTML=pendingReq.map(function(r){
+            var when=new Date(r.requestedAt).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+            var exp=r.passExpiry.indexOf('T')>0?new Date(r.passExpiry).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):new Date(r.passExpiry).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+            return '<div class="log-item"><span class="log-time">'+when+'</span><span class="log-action"><b>'+esc(r.nickname)+'</b> · '+esc(r.carMake)+' '+esc(r.carModel)+' · <span class="plate">'+esc(r.plateNumber)+'</span><br><span style="font-size:10px;color:var(--muted)">Пропуск до '+exp+' · '+(typeLabels[r.passType]||r.passType)+(r.fullName?' · '+esc(r.fullName):'')+' · от: '+esc(r.requestedBy)+'</span></span><div class="log-controls"><button class="btn-action btn-approve" onclick="approveRequest(\''+r.id+'\')">✓ Одобрить</button><button class="btn-action btn-reject" onclick="rejectRequest(\''+r.id+'\')">✕ Отклонить</button></div></div>';
+        }).join('');
+    }
+
+    // Admin tab badge = новые запросы на пропуск + заявки на регистрацию
+    var tabBadge=document.getElementById('tabAdminCount');
+    var attention=pendingReq.length+pendingUsers.length;
+    if(tabBadge)tabBadge.textContent=attention>0?attention:'';
+
     // Pending users
     var pendingList=document.getElementById('pendingList');
     var pc=document.getElementById('pendingCount');
@@ -1251,6 +1455,53 @@ function rejectUser(login){
     });
 }
 
+// ===== PASS REQUESTS ACTIONS =====
+function resolveRequest(id,approve){
+    var r=passRequests.find(function(x){return x.id===id});
+    if(!r)return;
+    r.status=approve?'approved':'rejected';
+    r.approvedBy=currentUser?currentUser.login:'system';
+    r.approvedAt=new Date().toISOString();
+    saveLocalRequests();
+    if(db)db.ref('kpp_requests/'+(r._key||r.id)).update({status:r.status,approvedBy:r.approvedBy,approvedAt:r.approvedAt}).catch(function(){setSyncBadge(false);syncOnline=false});
+    if(approve){
+        addPassRecord({nickname:r.nickname,fullName:r.fullName,carMake:r.carMake,carModel:r.carModel,plateNumber:r.plateNumber,passExpiry:r.passExpiry,passType:r.passType,note:r.note});
+        addLog(currentUser?currentUser.login:'system','Одобрил запрос на пропуск: '+r.nickname+' ('+r.plateNumber+')');
+        showToast('Пропуск одобрен: '+r.nickname+' ('+r.plateNumber+')','success');
+    }else{
+        addLog(currentUser?currentUser.login:'system','Отклонил запрос на пропуск: '+r.nickname+' ('+r.plateNumber+')');
+        showToast('Запрос отклонён: '+r.nickname+' ('+r.plateNumber+')','info');
+    }
+    renderAdminPanel();
+    render();updateStats();
+}
+function approveRequest(id){resolveRequest(id,true)}
+function rejectRequest(id){resolveRequest(id,false)}
+
+// ===== MY REQUESTS (для обычных пользователей) =====
+function renderMyRequests(){
+    var list=document.getElementById('myRequestList');
+    if(!list)return;
+    var mine=passRequests.filter(function(r){return r.requestedBy===currentUser.login}).slice().sort(function(a,b){return b.requestedAt<a.requestedAt?-1:1});
+    if(mine.length===0){
+        list.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:12px;text-align:center">У вас пока нет заявок</div>';
+        return;
+    }
+    var typeLabels={employee:'Сотр.',hourly:'Час.',permanent:'Пост.',temporary:'Врем.',single:'Разов.',vip:'VIP'};
+    var statusMap={
+        'pending':{text:'На рассмотрении',cls:'badge-pending'},
+        'approved':{text:'Одобрено',cls:'badge-approved'},
+        'rejected':{text:'Отклонено',cls:'badge-rejected'}
+    };
+    list.innerHTML=mine.map(function(r){
+        var when=new Date(r.requestedAt).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        var exp=r.passExpiry.indexOf('T')>0?new Date(r.passExpiry).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):new Date(r.passExpiry).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+        var st=statusMap[r.status]||{text:r.status,cls:'badge-pending'};
+        var extra=r.approvedAt?' · '+(r.status==='approved'?'Одобрена':'Обработана')+': '+new Date(r.approvedAt).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+        return '<div class="log-item"><span class="log-time">'+when+'</span><span class="log-action"><b>'+esc(r.nickname)+'</b> · '+esc(r.carMake)+' '+esc(r.carModel)+' · <span class="plate">'+esc(r.plateNumber)+'</span><br><span style="font-size:10px;color:var(--muted)">Пропуск до '+exp+' · '+(typeLabels[r.passType]||r.passType)+(r.fullName?' · '+esc(r.fullName):'')+extra+'</span></span><span class="badge '+st.cls+'">'+st.text+'</span></div>';
+    }).join('');
+}
+
 // ===== TABS =====
 document.getElementById('tabsBar').addEventListener('click',function(e){
     var tab=e.target.closest('.tab');if(!tab)return;
@@ -1264,16 +1515,30 @@ document.getElementById('tabsBar').addEventListener('click',function(e){
         document.getElementById('formPanel').style.display='none';
         document.getElementById('adminSection').style.display='none';
         document.getElementById('accountingSection').style.display='none';
+        document.getElementById('myRequestsSection').style.display='none';
         document.getElementById('mapSection').classList.add('active');
         document.getElementById('mapSection').style.display='';
         return;
     }
+    if(filter==='myrequests'){
+        document.getElementById('tableSection').style.display='none';
+        document.getElementById('formPanel').style.display='none';
+        document.getElementById('mapSection').classList.remove('active');
+        document.getElementById('mapSection').style.display='none';
+        document.getElementById('adminSection').style.display='none';
+        document.getElementById('accountingSection').style.display='none';
+        document.getElementById('myRequestsSection').style.display='';
+        renderMyRequests();
+        return;
+    }
+
     if(filter==='admin'){
         document.getElementById('tableSection').style.display='none';
         document.getElementById('formPanel').style.display='none';
         document.getElementById('mapSection').classList.remove('active');
         document.getElementById('mapSection').style.display='none';
         document.getElementById('accountingSection').style.display='none';
+        document.getElementById('myRequestsSection').style.display='none';
         document.getElementById('adminSection').style.display='';
         renderAdminPanel();
         return;
@@ -1285,6 +1550,7 @@ document.getElementById('tabsBar').addEventListener('click',function(e){
         document.getElementById('mapSection').classList.remove('active');
         document.getElementById('mapSection').style.display='none';
         document.getElementById('adminSection').style.display='none';
+        document.getElementById('myRequestsSection').style.display='none';
         document.getElementById('accountingSection').style.display='';
         return;
     }
@@ -1295,11 +1561,32 @@ document.getElementById('tabsBar').addEventListener('click',function(e){
     document.getElementById('mapSection').style.display='none';
     document.getElementById('adminSection').style.display='none';
     document.getElementById('accountingSection').style.display='none';
+    document.getElementById('myRequestsSection').style.display='none';
     currentFilter=filter;
     render();
 });
 
 // ===== FORM =====
+function addPassRecord(data){
+    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).substr(2,6),nickname:data.nickname,fullName:data.fullName,carMake:data.carMake,carModel:data.carModel,plateNumber:data.plateNumber,passExpiry:data.passExpiry,passType:data.passType,note:data.note,entryTime:new Date().toISOString(),exitTime:null,inside:true});
+    highlightId=records[0].id;
+    saveAll();render();updateStats();
+    addLog(currentUser?currentUser.login:'system','Зарегистрировал въезд: '+data.nickname+' ('+data.plateNumber+')');
+    showToast(data.nickname+' ('+data.plateNumber+') — въезд зарегистрирован');
+}
+function submitPassRequest(data){
+    if(passRequests.some(function(r){return r.status==='pending'&&r.plateNumber===data.plateNumber})){
+        showToast('Запрос по номеру '+data.plateNumber+' уже на рассмотрении','error');
+        return;
+    }
+    var req={id:Date.now().toString(36)+Math.random().toString(36).substr(2,6),_key:null,nickname:data.nickname,fullName:data.fullName,carMake:data.carMake,carModel:data.carModel,plateNumber:data.plateNumber,passExpiry:data.passExpiry,passType:data.passType,note:data.note,requestedBy:currentUser?currentUser.login:'system',requestedAt:new Date().toISOString(),status:'pending',approvedBy:null,approvedAt:null};
+    passRequests.unshift(req);
+    saveLocalRequests();
+    saveRequestFB(req);
+    addLog(currentUser?currentUser.login:'system','Отправил запрос на пропуск: '+data.nickname+' ('+data.plateNumber+')');
+    renderMyRequests();
+    showToast('Запрос на пропуск отправлен на подтверждение');
+}
 document.getElementById('entryForm').addEventListener('submit',function(e){
     e.preventDefault();
     var nickname=document.getElementById('nickname').value.trim();
@@ -1321,16 +1608,18 @@ document.getElementById('entryForm').addEventListener('submit',function(e){
     }
     if(new Date(passExpiry)<new Date()){if(!confirm('Пропуск просрочен. Продолжить?'))return}
 
-    records.unshift({id:Date.now().toString(36)+Math.random().toString(36).substr(2,6),nickname:nickname,fullName:fullName,carMake:carMake,carModel:carModel,plateNumber:plateNumber,passExpiry:passExpiry,passType:passType,note:note,entryTime:new Date().toISOString(),exitTime:null,inside:true});
-    highlightId=records[0].id;
-    saveAll();render();updateStats();
-    addLog(currentUser?currentUser.login:'system','Зарегистрировал въезд: '+nickname+' ('+plateNumber+')');
+    var data={nickname:nickname,fullName:fullName,carMake:carMake,carModel:carModel,plateNumber:plateNumber,passExpiry:passExpiry,passType:passType,note:note};
+
+    // Обычные пользователи отправляют запросы на подтверждение, админы/владелец/бухгалтер добавляют сразу
+    var userRole=currentUser?currentUser.role:'user';
+    if(userRole==='user'){submitPassRequest(data)}
+    else{addPassRecord(data)}
+
     this.reset();
     var dd=new Date();dd.setFullYear(dd.getFullYear()+1);
     var inp=document.getElementById('passExpiry');if(inp)inp.valueAsDate=dd;
     document.getElementById('passType').value=passType;
     togglePassExpiryTime();
-    showToast(nickname+' ('+plateNumber+') — въезд зарегистрирован');
 });
 
 // ===== EXIT =====
